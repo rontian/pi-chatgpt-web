@@ -9,12 +9,15 @@ const required = [
   "src/transport/transport.ts",
   "src/transport/browser-owned.ts",
   "scripts/p1/browser-probe.mjs",
+  "scripts/p1/text-turn-probe.mjs",
+  "tests/text-turn-probe.test.mjs",
   "docs/ARCHITECTURE.md",
   "docs/FEATURES.md",
   "docs/DEVELOPMENT_PLAN.md",
   "docs/TASKS.md",
   "docs/research/P1_BROWSER_AUTOMATION_DECISION.md",
-  "docs/research/P1_BROWSER_PROBE_RUNBOOK.md"
+  "docs/research/P1_BROWSER_PROBE_RUNBOOK.md",
+  "docs/research/P1_TEXT_TURN_PROBE_RUNBOOK.md"
 ];
 
 for (const path of required) await access(path);
@@ -28,6 +31,9 @@ if (pkg.peerDependencies?.["@earendil-works/pi-coding-agent"] !== "*") {
 }
 if (pkg.dependencies?.["playwright-core"] !== "1.63.0") {
   throw new Error("P1 browser dependency must stay pinned to playwright-core 1.63.0");
+}
+for (const script of ["p1:turn", "p1:turn:continue", "p1:turn:five"]) {
+  if (!pkg.scripts?.[script]) throw new Error(`missing ${script} script`);
 }
 
 console.log("structure check: ok");

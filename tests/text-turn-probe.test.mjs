@@ -1,0 +1,47 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  parseArgs,
+  normalizeText,
+  buildProbeToken,
+  buildPrompt,
+  expectedReply,
+  summarizeTurn,
+  extractConversationId,
+} from "../scripts/p1/text-turn-probe.mjs";
+
+test("text-turn probe bounds turns and parses options", () => {
+  const parsed = parseArgs(["--turns", "5", "--timeout-ms", "90000", "--json"]);
+  assert.equal(parsed.turns, 5);
+  assert.equal(parsed.timeoutMs, 90000);
+  assert.equal(parsed.json, true);
+  assert.throws(() => parseArgs(["--turns", "6"]), /between 1 and 5/);
+});
+
+test("second turn proves prior-conversation recall", () => {
+  const first = buildProbeToken("a1b2c3d4", 1);
+  const second = buildProbeToken("a1b2c3d4", 2);
+  assert.match(buildPrompt({ turn: 2, firstToken: first, token: second }), /previous assistant reply/);
+  assert.equal(expectedReply({ turn: 2, firstToken: first, token: second }), first);
+});
+
+test("summary does not expose response text", () => {
+  const result = summarizeTurn({
+    turn: 1,
+    expected: "  OK  ",
+    actual: "OK\n",
+    conversationId: "abc",
+    elapsedMs: 123,
+  });
+  assert.equal(result.exactMatch, true);
+  assert.equal(result.responseLength, 2);
+  assert.ok(result.responseSha256.length === 64);
+  assert.equal("actual" in result, false);
+  assert.equal("expected" in result, false);
+});
+
+test("normalization and conversation id extraction are deterministic", () => {
+  assert.equal(normalizeText("A\n  B"), "A B");
+  assert.equal(extractConversationId("https://chatgpt.com/c/1234?x=1"), "1234");
+  assert.equal(extractConversationId("https://chatgpt.com/"), null);
+});
