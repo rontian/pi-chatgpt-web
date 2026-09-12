@@ -1,5 +1,7 @@
 import type { ChatGPTTurnRequest, ChatGPTTurnResult } from "../core/types.js";
 import type { ProductTransport } from "../transport/transport.js";
+import { CapabilityRegistry } from "../product/capabilities.js";
+import { normalizeProductObservations } from "../product/observations.js";
 
 export interface ConversationState {
   conversationId: string | null;
@@ -10,6 +12,7 @@ export interface ConversationState {
 
 export class ChatGPTProductRuntime {
   private readonly conversations = new Map<string, ConversationState>();
+  readonly capabilities = new CapabilityRegistry();
 
   constructor(private readonly transport: ProductTransport) {}
 
@@ -28,7 +31,22 @@ export class ChatGPTProductRuntime {
       conversationId: request.conversationId ?? previous?.conversationId ?? undefined,
     };
 
-    const result = await this.transport.sendTurn(effective);
+    const raw = await this.transport.sendTurn(effective);
+    const result: ChatGPTTurnResult = {
+      ...raw,
+      observations: normalizeProductObservations(raw.observations ?? []),
+    };
+    for (const observation of result.observations) this.capabilities.observe(observation);
+    if (result.status === "completed" && result.text) {
+      this.capabilities.record({
+        capability: "text",
+        state: "available",
+        source: "observation",
+        detail: "completed assistant text",
+        observedAt: new Date().toISOString(),
+      });
+    }
+
     const next: ConversationState = {
       conversationId: result.conversationId === "unknown" ? previous?.conversationId ?? null : result.conversationId,
       turns: (previous?.turns ?? 0) + 1,

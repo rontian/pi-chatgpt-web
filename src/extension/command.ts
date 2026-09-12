@@ -5,7 +5,7 @@ import { PromptController } from "./prompt-controller.js";
 import { loadConfig, saveConfig } from "../config/loader.js";
 import { listModelKeys, resolveAssistantModel } from "../assistant/model-catalog.js";
 
-const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
+const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt capabilities\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
 
 export function registerChatGPTCommand(pi: ExtensionAPI) {
   const services = new ChatGPTCommandServices();
@@ -30,6 +30,10 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
           ].join("\n"), health.ok ? "info" : "warning");
         }
 
+        if (command.kind === "capabilities") {
+          return ctx.ui.notify(JSON.stringify(services.runtime.capabilities.snapshot(), null, 2), "info");
+        }
+
         if (command.kind === "login") {
           return ctx.ui.notify("Run the local P1 login probe (`npm run p1:browser`) from the package checkout. Production browser-driver wiring remains gated by local validation.", "info");
         }
@@ -40,7 +44,7 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
 
         if (command.kind === "doctor") {
           const result = await services.doctor();
-          return ctx.ui.notify(JSON.stringify(result, null, 2), result.ok ? "info" : "warning");
+          return ctx.ui.notify(JSON.stringify({ ...result, capabilities: services.runtime.capabilities.snapshot() }, null, 2), result.ok ? "info" : "warning");
         }
 
         if (command.kind === "ask") {
