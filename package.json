@@ -1,0 +1,36 @@
+{
+  "name": "pi-chatgpt-web",
+  "version": "0.0.0",
+  "description": "A Pi package that bridges Pi workflows to an authenticated ChatGPT Web product session.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rontian/pi-chatgpt-web.git"
+  },
+  "homepage": "https://github.com/rontian/pi-chatgpt-web#readme",
+  "bugs": {
+    "url": "https://github.com/rontian/pi-chatgpt-web/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "chatgpt",
+    "chatgpt-web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "check": "node ./scripts/check-structure.mjs",
+    "test": "node --test ./tests/*.test.mjs"
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+.DS_Store
+*.log
+coverage/
+dist/
+.tmp/
+.env
+.env.*
+!.env.example
+
+# Local browser/session state must never be committed.
+.pi-chatgpt-web/
+chatgpt-profile/
+auth-state/
