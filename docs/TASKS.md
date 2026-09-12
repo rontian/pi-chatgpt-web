@@ -1,6 +1,6 @@
 # Task Board
 
-Status values: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
+Status values: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`, `DEFERRED_VALIDATION`.
 
 ## P0 — Bootstrap / Architecture Freeze
 
@@ -15,24 +15,36 @@ Status values: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 - DONE — Add Web Feasibility plan.
 - DONE — Add full P0-P12 development plan.
 - DONE — Add bootstrap checks/tests/CI.
-- TODO — Verify package by installing the committed Git URL in a real Pi environment.
+- DEFERRED_VALIDATION — Install committed Git URL in a real Pi environment.
 
 ## P1 — Web Feasibility Gate
 
 - DONE — Select prototype Chromium automation dependency: `playwright-core@1.63.0` + branded Chrome + isolated persistent profile.
-- DONE — Implement interactive persistent-profile login/auth probe harness (implementation/unit validation only).
-- TODO — Run fresh real-account interactive login probe and record evidence.
-- TODO — Verify auth reuse after process restart.
-- TODO — Observe one browser-owned ChatGPT text turn.
-- TODO — Determine canonical conversation readback source.
-- TODO — Determine completion detection.
-- TODO — Verify same-conversation continuation.
-- TODO — Test 5+ sequential turns.
-- TODO — Test tab recreation.
-- TODO — Test session expiry.
-- TODO — Design/verify ambiguous-write reconciliation.
-- TODO — Create P1 feasibility report and go/no-go decision.
+- DONE — Implement interactive persistent-profile login/auth probe harness.
+- DONE — Implement research-only text-turn/continuation/five-turn probe harness.
+- DEFERRED_VALIDATION — Fresh real-account interactive login.
+- DEFERRED_VALIDATION — Auth reuse after process restart.
+- DEFERRED_VALIDATION — One real browser-owned ChatGPT text turn.
+- DEFERRED_VALIDATION — Canonical conversation readback decision.
+- DEFERRED_VALIDATION — Production completion detection.
+- DEFERRED_VALIDATION — Same-conversation continuation evidence.
+- DEFERRED_VALIDATION — Five sequential turn evidence.
+- DEFERRED_VALIDATION — Tab recreation/session expiry/ambiguous-write experiments.
 
-## Later phases
+## P2 — Browser/Auth + Product Transport
 
-See `docs/DEVELOPMENT_PLAN.md`. Tasks are expanded only when the preceding phase passes its exit gate.
+- DONE — Add reusable BrowserRuntime lifecycle/profile abstraction.
+- DONE — Add BrowserTurnDriver boundary for production transport integration.
+- DONE — Enforce ambiguous-write invariant in BrowserOwnedTransport.
+- DEFERRED_VALIDATION — Wire the real browser driver after P1 local evidence.
+
+## P3 — ChatGPT Product / Conversation Runtime
+
+- DONE — Add per-workflow conversation state.
+- DONE — Reuse conversation IDs across runtime turns.
+- DONE — Preserve turn count/status/message identity state.
+- DEFERRED_VALIDATION — Validate against real ChatGPT conversation IDs and canonical readback.
+
+## P4-P12
+
+Implementation proceeds with basic/static/unit validation. Real-account/product-capability checks are deferred until the repository is pulled to the user's workstation.
