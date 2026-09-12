@@ -6,15 +6,17 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import process from "node:process";
+import {
+  AUTH_COMPOSER_SELECTORS,
+  buildPersistentContextOptions,
+  extractProxyOption,
+  probeAuthentication,
+} from "./browser-probe-helpers.mjs";
 
 const CHATGPT_URL = "https://chatgpt.com/";
 const DEFAULT_PROFILE_DIR = join(homedir(), ".pi", "agent", "pi-chatgpt-web", "browser-profile");
 
-export const COMPOSER_SELECTORS = [
-  "#prompt-textarea",
-  '[contenteditable="true"][role="textbox"]',
-  'textarea[placeholder*="Ask"]',
-];
+export const COMPOSER_SELECTORS = AUTH_COMPOSER_SELECTORS;
 
 export const SEND_SELECTORS = [
   '[data-testid="send-button"]',
@@ -39,10 +41,12 @@ export const STOP_SELECTORS = [
   'button[aria-label*="Stop"]',
 ];
 
-export function parseArgs(argv) {
+export function parseArgs(argv, env = process.env) {
+  const { args, proxy } = extractProxyOption(argv, env);
   const result = {
-    channel: process.env.PI_CHATGPT_WEB_BROWSER_CHANNEL || "chrome",
-    profileDir: process.env.PI_CHATGPT_WEB_BROWSER_PROFILE || DEFAULT_PROFILE_DIR,
+    channel: env.PI_CHATGPT_WEB_BROWSER_CHANNEL || "chrome",
+    profileDir: env.PI_CHATGPT_WEB_BROWSER_PROFILE || DEFAULT_PROFILE_DIR,
+    proxy,
     headless: false,
     turns: 1,
     timeoutMs: 120_000,
@@ -50,15 +54,15 @@ export function parseArgs(argv) {
     keepOpen: false,
   };
 
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
     if (arg === "--headless") result.headless = true;
     else if (arg === "--json") result.json = true;
     else if (arg === "--keep-open") result.keepOpen = true;
-    else if (arg === "--channel") result.channel = argv[++i];
-    else if (arg === "--profile-dir") result.profileDir = resolve(argv[++i]);
-    else if (arg === "--turns") result.turns = Number.parseInt(argv[++i], 10);
-    else if (arg === "--timeout-ms") result.timeoutMs = Number.parseInt(argv[++i], 10);
+    else if (arg === "--channel") result.channel = args[++i];
+    else if (arg === "--profile-dir") result.profileDir = resolve(args[++i]);
+    else if (arg === "--turns") result.turns = Number.parseInt(args[++i], 10);
+    else if (arg === "--timeout-ms") result.timeoutMs = Number.parseInt(args[++i], 10);
     else if (arg === "--help" || arg === "-h") result.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -160,19 +164,6 @@ async function anyVisible(page, selectors) {
   return false;
 }
 
-async function probeAuth(page) {
-  return page.evaluate(async () => {
-    try {
-      const response = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-      if (!response.ok) return { authenticated: false, status: response.status };
-      const body = await response.json().catch(() => null);
-      return { authenticated: Boolean(body && typeof body === "object" && (body.user || body.accessToken)), status: response.status };
-    } catch {
-      return { authenticated: false, status: null };
-    }
-  });
-}
-
 async function sendViaUi(page, prompt) {
   const composer = await firstVisible(page, COMPOSER_SELECTORS);
   if (!composer) throw new Error("Could not find a visible ChatGPT composer. UI selectors may have changed.");
@@ -215,7 +206,7 @@ async function waitForAssistant(page, beforeCount, timeoutMs) {
 }
 
 function printHelp() {
-  console.log(`P1 ChatGPT text-turn UI probe\n\nUsage:\n  npm run p1:turn\n  npm run p1:turn:continue\n  npm run p1:turn:five\n\nOptions:\n  --turns <1..5>\n  --channel <name>\n  --profile-dir <path>\n  --headless\n  --timeout-ms <ms>\n  --json\n  --keep-open\n`);
+  console.log(`P1 ChatGPT text-turn UI probe\n\nUsage:\n  npm run p1:turn\n  npm run p1:turn:continue\n  npm run p1:turn:five\n\nOptions:\n  --turns <1..5>\n  --channel <name>\n  --profile-dir <path>\n  --proxy <url>\n  --headless\n  --timeout-ms <ms>\n  --json\n  --keep-open\n\nEnvironment:\n  PI_CHATGPT_WEB_BROWSER_CHANNEL\n  PI_CHATGPT_WEB_BROWSER_PROFILE\n  PI_CHATGPT_WEB_PROXY\n`);
 }
 
 async function loadPlaywright() {
@@ -230,19 +221,19 @@ async function main() {
   const { chromium } = await loadPlaywright();
   const require = createRequire(import.meta.url);
   const playwrightVersion = require("playwright-core/package.json").version;
-  const context = await chromium.launchPersistentContext(options.profileDir, {
-    channel: options.channel,
-    headless: options.headless,
-    viewport: null,
-    chromiumSandbox: true,
-  });
+  const context = await chromium.launchPersistentContext(
+    options.profileDir,
+    buildPersistentContextOptions(options)
+  );
 
   try {
     const page = context.pages()[0] ?? (await context.newPage());
     await page.goto(CHATGPT_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
 
-    const auth = await probeAuth(page);
-    if (!auth.authenticated) throw new Error("ChatGPT profile is not authenticated. Run npm run p1:browser first.");
+    const auth = await probeAuthentication(page);
+    if (!auth.authenticated) {
+      throw new Error("ChatGPT profile is not authenticated. Run npm run p1:browser first.");
+    }
 
     const seed = randomBytes(5).toString("hex");
     const firstToken = buildProbeToken(seed, 1);
@@ -282,7 +273,8 @@ async function main() {
       probe: "text-turn-ui",
       playwrightVersion,
       channel: options.channel,
-      authenticated: true,
+      proxyConfigured: Boolean(options.proxy),
+      ...auth,
       turnsRequested: options.turns,
       turnsPassed: results.filter((item) => item.exactMatch).length,
       sameConversation: results.every((item) => !canonicalConversationId || item.conversationId === canonicalConversationId),

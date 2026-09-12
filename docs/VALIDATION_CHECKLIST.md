@@ -15,16 +15,37 @@ This checklist is intentionally deferred until the repository is pulled to the u
 
 ## B. Browser authentication
 
+If normal Chrome depends on a proxy extension, remember that the isolated P1 profile does not automatically inherit it. Configure the equivalent explicit proxy first, for example:
+
+```bash
+export PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890
+```
+
+`--proxy <url>` overrides the environment value. Leave the environment variable unset/blank for direct access.
+
 - [ ] `npm run p1:browser` fresh login succeeds
 - [ ] `npm run p1:browser:check` succeeds in a new process
+- [ ] output reports `authSource` as `session`, `ui`, or `session+ui`
 - [ ] browser profile is isolated from normal Chrome
+- [ ] proxy-dependent setup works with explicit `PI_CHATGPT_WEB_PROXY`
 - [ ] expired login produces a controlled error
+- [ ] no cookies, access tokens, raw session payloads, email addresses, or account identifiers appear in probe output
+- [ ] Chromium sandbox remains enabled
 
 ## C. Text turns
+
+Use the same `PI_CHATGPT_WEB_PROXY` value, when required, for all text-turn commands:
+
+```bash
+npm run p1:turn
+npm run p1:turn:continue
+npm run p1:turn:five
+```
 
 - [ ] `npm run p1:turn`
 - [ ] `npm run p1:turn:continue`
 - [ ] `npm run p1:turn:five`
+- [ ] text-turn probe reports sanitized authentication evidence before sending
 - [ ] tab close/recreate test
 - [ ] uncertain/timeout write does not blind retry
 - [ ] canonical readback approach is selected and documented

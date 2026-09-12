@@ -7,6 +7,13 @@ import process from "node:process";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { createRequire } from "node:module";
+import {
+  buildPersistentContextOptions,
+  extractProxyOption,
+  probeAuthentication,
+  sanitizeAuthProbe,
+  sanitizeSessionProbe,
+} from "./browser-probe-helpers.mjs";
 
 const CHATGPT_URL = "https://chatgpt.com/";
 const DEFAULT_PROFILE_DIR = join(
@@ -17,25 +24,26 @@ const DEFAULT_PROFILE_DIR = join(
   "browser-profile"
 );
 
-export function parseArgs(argv) {
+export function parseArgs(argv, env = process.env) {
+  const { args, proxy } = extractProxyOption(argv, env);
   const result = {
-    channel: process.env.PI_CHATGPT_WEB_BROWSER_CHANNEL || "chrome",
-    profileDir:
-      process.env.PI_CHATGPT_WEB_BROWSER_PROFILE || DEFAULT_PROFILE_DIR,
+    channel: env.PI_CHATGPT_WEB_BROWSER_CHANNEL || "chrome",
+    profileDir: env.PI_CHATGPT_WEB_BROWSER_PROFILE || DEFAULT_PROFILE_DIR,
+    proxy,
     headless: false,
     checkOnly: false,
     json: false,
     keepOpen: false,
   };
 
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
     if (arg === "--headless") result.headless = true;
     else if (arg === "--check-only") result.checkOnly = true;
     else if (arg === "--json") result.json = true;
     else if (arg === "--keep-open") result.keepOpen = true;
-    else if (arg === "--channel") result.channel = argv[++i];
-    else if (arg === "--profile-dir") result.profileDir = resolve(argv[++i]);
+    else if (arg === "--channel") result.channel = args[++i];
+    else if (arg === "--profile-dir") result.profileDir = resolve(args[++i]);
     else if (arg === "--help" || arg === "-h") result.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -45,52 +53,7 @@ export function parseArgs(argv) {
   return result;
 }
 
-export function sanitizeSessionProbe(payload) {
-  if (!payload || typeof payload !== "object") {
-    return { authenticated: false, sessionEndpointStatus: null };
-  }
-
-  return {
-    authenticated: Boolean(payload.authenticated),
-    sessionEndpointStatus:
-      Number.isInteger(payload.sessionEndpointStatus)
-        ? payload.sessionEndpointStatus
-        : null,
-  };
-}
-
-async function probeAuth(page) {
-  const result = await page.evaluate(async () => {
-    try {
-      const response = await fetch("/api/auth/session", {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      let authenticated = false;
-      if (response.ok) {
-        const body = await response.json().catch(() => null);
-        authenticated = Boolean(
-          body &&
-          typeof body === "object" &&
-          (body.user || body.accessToken)
-        );
-      }
-
-      return {
-        authenticated,
-        sessionEndpointStatus: response.status,
-      };
-    } catch {
-      return {
-        authenticated: false,
-        sessionEndpointStatus: null,
-      };
-    }
-  });
-
-  return sanitizeSessionProbe(result);
-}
+export { sanitizeAuthProbe, sanitizeSessionProbe };
 
 function printHelp() {
   console.log(`P1 browser feasibility probe
@@ -103,6 +66,7 @@ Usage:
 Options:
   --channel <name>       Playwright browser channel (default: chrome)
   --profile-dir <path>   Isolated persistent profile directory
+  --proxy <url>          Explicit HTTP/HTTPS/SOCKS proxy server
   --headless             Run Chrome without a visible window
   --check-only           Do not pause for interactive login
   --json                 Print the final result as JSON
@@ -112,6 +76,7 @@ Options:
 Environment:
   PI_CHATGPT_WEB_BROWSER_CHANNEL
   PI_CHATGPT_WEB_BROWSER_PROFILE
+  PI_CHATGPT_WEB_PROXY
 `);
 }
 
@@ -139,12 +104,10 @@ async function main() {
   const require = createRequire(import.meta.url);
   const playwrightVersion = require("playwright-core/package.json").version;
 
-  const context = await chromium.launchPersistentContext(options.profileDir, {
-    channel: options.channel,
-    headless: options.headless,
-    viewport: null,
-    chromiumSandbox: true,
-  });
+  const context = await chromium.launchPersistentContext(
+    options.profileDir,
+    buildPersistentContextOptions(options)
+  );
 
   try {
     const pages = context.pages();
@@ -155,7 +118,7 @@ async function main() {
       timeout: 60_000,
     });
 
-    let auth = await probeAuth(page);
+    let auth = await probeAuthentication(page);
 
     if (!auth.authenticated && !options.checkOnly && !options.headless) {
       console.log(
@@ -172,7 +135,7 @@ async function main() {
         waitUntil: "domcontentloaded",
         timeout: 60_000,
       });
-      auth = await probeAuth(page);
+      auth = await probeAuthentication(page);
     }
 
     const result = {
@@ -181,6 +144,7 @@ async function main() {
       playwrightVersion,
       channel: options.channel,
       profileDir: options.profileDir,
+      proxyConfigured: Boolean(options.proxy),
       pageUrl: page.url(),
       pageTitle: await page.title(),
       ...auth,
@@ -211,8 +175,7 @@ async function main() {
 }
 
 const isDirectRun =
-  Boolean(process.argv[1]) &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun) {
   main().catch((error) => {

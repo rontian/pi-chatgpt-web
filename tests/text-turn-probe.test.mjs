@@ -11,11 +11,26 @@ import {
 } from "../scripts/p1/text-turn-probe.mjs";
 
 test("text-turn probe bounds turns and parses options", () => {
-  const parsed = parseArgs(["--turns", "5", "--timeout-ms", "90000", "--json"]);
+  const parsed = parseArgs(["--turns", "5", "--timeout-ms", "90000", "--json"], {});
   assert.equal(parsed.turns, 5);
   assert.equal(parsed.timeoutMs, 90000);
   assert.equal(parsed.json, true);
-  assert.throws(() => parseArgs(["--turns", "6"]), /between 1 and 5/);
+  assert.throws(() => parseArgs(["--turns", "6"], {}), /between 1 and 5/);
+});
+
+test("text-turn probe uses the same proxy precedence and validation", () => {
+  assert.equal(parseArgs([], {}).proxy, null);
+  assert.equal(
+    parseArgs([], { PI_CHATGPT_WEB_PROXY: "http://127.0.0.1:7890" }).proxy,
+    "http://127.0.0.1:7890"
+  );
+  assert.equal(
+    parseArgs(["--proxy", "https://proxy.example:8443"], {
+      PI_CHATGPT_WEB_PROXY: "http://127.0.0.1:7890",
+    }).proxy,
+    "https://proxy.example:8443"
+  );
+  assert.throws(() => parseArgs(["--proxy", ""], {}), /must not be empty/);
 });
 
 test("second turn proves prior-conversation recall", () => {

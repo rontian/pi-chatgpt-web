@@ -2,7 +2,7 @@
 
 `pi-chatgpt-web` is a Pi package that treats an authenticated ChatGPT Web session as a **product bridge/tool**, not as Pi's primary model provider.
 
-> Version: **0.1.0-alpha.0**  
+> Version: **0.1.0-alpha.0**
 > Implementation status: P0-P12 architecture/workflow code is present with basic/static/unit validation. Real ChatGPT browser behavior, real Pi TUI operation, helper-model calls, and connected capabilities are intentionally marked **deferred validation** until tested on the user's workstation.
 
 ## Intended workflow
@@ -81,6 +81,14 @@ npm run pack:check
 
 P1 research uses `playwright-core@1.63.0`, an installed Chrome channel, and an isolated persistent profile.
 
+If normal Chrome reaches ChatGPT through a proxy extension, the isolated P1 Chrome profile does **not** automatically inherit that extension. Configure the proxy explicitly before browser/auth and text-turn validation:
+
+```bash
+export PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890
+```
+
+The proxy URL is not hard-coded; `--proxy <url>` overrides `PI_CHATGPT_WEB_PROXY`, and an unset/blank environment variable means no proxy. The probes pass the selected server to Playwright's `proxy.server` and keep Chromium sandboxing enabled.
+
 ```bash
 npm run p1:browser
 npm run p1:browser:check
@@ -88,6 +96,8 @@ npm run p1:turn
 npm run p1:turn:continue
 npm run p1:turn:five
 ```
+
+Authentication is confirmed from sanitized positive evidence from `/api/auth/session`, the logged-in ChatGPT UI, or both. Probe output reports only `authenticated`, `authSource`, endpoint status, and other non-secret diagnostics; it never prints raw session payloads, cookies, access tokens, email addresses, or account identifiers.
 
 These probes exist to collect real workstation evidence. Do not interpret repository-only tests as proof that ChatGPT's current Web product protocol works.
 
