@@ -72,8 +72,8 @@ async function probeAuth(page) {
         const body = await response.json().catch(() => null);
         authenticated = Boolean(
           body &&
-            typeof body === "object" &&
-            (body.user || body.accessToken)
+          typeof body === "object" &&
+          (body.user || body.accessToken)
         );
       }
 
@@ -143,6 +143,7 @@ async function main() {
     channel: options.channel,
     headless: options.headless,
     viewport: null,
+    chromiumSandbox: true,
   });
 
   try {

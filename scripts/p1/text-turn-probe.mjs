@@ -234,6 +234,7 @@ async function main() {
     channel: options.channel,
     headless: options.headless,
     viewport: null,
+    chromiumSandbox: true,
   });
 
   try {
