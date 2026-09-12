@@ -3,48 +3,34 @@
 Status values: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`, `DEFERRED_VALIDATION`.
 
 ## P0 — Bootstrap / Architecture Freeze
-
-- DONE — Confirm repository `rontian/pi-chatgpt-web` and `/chatgpt` namespace.
-- DONE — Create Pi package manifest and extension entrypoint.
-- DONE — Add command parser/bootstrap help/status.
-- DONE — Define runtime/transport/core result contracts.
-- DONE — Define helper-model boundary.
-- DONE — Define context/session separation.
-- DONE — Define workflow envelope bootstrap parser.
-- DONE — Add security policy.
-- DONE — Add Web Feasibility plan.
-- DONE — Add full P0-P12 development plan.
-- DONE — Add bootstrap checks/tests/CI.
-- DEFERRED_VALIDATION — Install committed Git URL in a real Pi environment.
+- DONE — Package structure, `/chatgpt` namespace, architecture, security, CI and P0-P12 roadmap.
+- DEFERRED_VALIDATION — Install the committed Git URL in a real Pi environment.
 
 ## P1 — Web Feasibility Gate
-
-- DONE — Select prototype Chromium automation dependency: `playwright-core@1.63.0` + branded Chrome + isolated persistent profile.
-- DONE — Implement interactive persistent-profile login/auth probe harness.
-- DONE — Implement research-only text-turn/continuation/five-turn probe harness.
-- DEFERRED_VALIDATION — Fresh real-account interactive login.
-- DEFERRED_VALIDATION — Auth reuse after process restart.
-- DEFERRED_VALIDATION — One real browser-owned ChatGPT text turn.
-- DEFERRED_VALIDATION — Canonical conversation readback decision.
-- DEFERRED_VALIDATION — Production completion detection.
-- DEFERRED_VALIDATION — Same-conversation continuation evidence.
-- DEFERRED_VALIDATION — Five sequential turn evidence.
-- DEFERRED_VALIDATION — Tab recreation/session expiry/ambiguous-write experiments.
+- DONE — Select `playwright-core@1.63.0` + branded Chrome + isolated persistent profile for research.
+- DONE — Implement sanitized auth probe and research text-turn/continuation/five-turn probe harnesses.
+- DEFERRED_VALIDATION — Fresh login, restart reuse, real text turns, canonical readback, continuation, five-turn, tab recreation, expiry and ambiguous-write experiments.
 
 ## P2 — Browser/Auth + Product Transport
-
-- DONE — Add reusable BrowserRuntime lifecycle/profile abstraction.
-- DONE — Add BrowserTurnDriver boundary for production transport integration.
-- DONE — Enforce ambiguous-write invariant in BrowserOwnedTransport.
-- DEFERRED_VALIDATION — Wire the real browser driver after P1 local evidence.
+- DONE — BrowserTurnDriver boundary and BrowserOwnedTransport integration point.
+- DONE — Ambiguous-write invariant.
+- DEFERRED_VALIDATION — Wire/approve real browser driver after P1 local evidence.
 
 ## P3 — ChatGPT Product / Conversation Runtime
+- DONE — Per-workflow conversation state, conversation-id reuse and normalized runtime result flow.
+- DEFERRED_VALIDATION — Validate real conversation/message identities and readback.
 
-- DONE — Add per-workflow conversation state.
-- DONE — Reuse conversation IDs across runtime turns.
-- DONE — Preserve turn count/status/message identity state.
-- DEFERRED_VALIDATION — Validate against real ChatGPT conversation IDs and canonical readback.
+## P4 — Pi Command Integration
+- DONE — `/chatgpt help|status|login|logout|doctor|ask` routes implemented.
+- DONE — Actionable unavailable-driver behavior retained instead of fake success.
+- DEFERRED_VALIDATION — Install/reload/real ask in Pi TUI.
 
-## P4-P12
+## P5 — Configuration + Helper Model Adapter
+- DONE — User-local config loader/validator and 0600 persistence.
+- DONE — Pi/OpenCodex model-registry listing and explicit/auto helper selection.
+- DONE — Vendor-independent helper adapter boundary and enabled/disabled configuration.
+- DONE — `/chatgpt config show|models|assistant-model|assistant` command surface.
+- DEFERRED_VALIDATION — Invoke a real configured helper model after local Pi integration.
 
-Implementation proceeds with basic/static/unit validation. Real-account/product-capability checks are deferred until the repository is pulled to the user's workstation.
+## P6-P12
+Implementation continues with basic/static/unit validation. Real-account/product-capability checks remain deferred until the repository is pulled to the user's workstation.
