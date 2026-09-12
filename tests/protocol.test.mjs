@@ -8,7 +8,9 @@ test("protocol source declares both envelope markers", async () => {
   assert.ok(source.includes("</pi-chatgpt>"));
 });
 
-test("bootstrap transport refuses to fake an implementation", async () => {
+test("browser transport requires an explicit validated driver instead of faking Web success", async () => {
   const source = await readFile("src/transport/browser-owned.ts", "utf8");
-  assert.match(source, /intentionally unimplemented/i);
+  assert.match(source, /BrowserTurnDriver/);
+  assert.match(source, /UnconfiguredBrowserTurnDriver/);
+  assert.match(source, /real browser driver requires local P1 validation/i);
 });

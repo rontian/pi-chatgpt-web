@@ -1,6 +1,6 @@
 {
   "name": "pi-chatgpt-web",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
   "description": "A Pi package that bridges Pi workflows to an authenticated ChatGPT Web product session.",
   "type": "module",
   "license": "MIT",
@@ -17,6 +17,13 @@
     "pi-extension",
     "chatgpt",
     "chatgpt-web"
+  ],
+  "files": [
+    "src",
+    "docs",
+    "scripts",
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22"
@@ -35,10 +42,15 @@
   "scripts": {
     "check": "node ./scripts/check-structure.mjs",
     "test": "node --test ./tests/*.test.mjs",
+    "validate": "npm run check && npm test",
+    "pack:check": "npm pack --dry-run",
     "p1:browser": "node ./scripts/p1/browser-probe.mjs",
     "p1:browser:check": "node ./scripts/p1/browser-probe.mjs --check-only --json",
     "p1:turn": "node ./scripts/p1/text-turn-probe.mjs --turns 1 --json",
     "p1:turn:continue": "node ./scripts/p1/text-turn-probe.mjs --turns 2 --json",
     "p1:turn:five": "node ./scripts/p1/text-turn-probe.mjs --turns 5 --json"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

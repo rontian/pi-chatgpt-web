@@ -5,25 +5,37 @@ const required = [
   "README.md",
   "src/index.ts",
   "src/extension/command.ts",
+  "src/extension/prompt-controller.ts",
   "src/runtime/chatgpt-runtime.ts",
   "src/transport/transport.ts",
   "src/transport/browser-owned.ts",
+  "src/context/collector.ts",
+  "src/workflows/prompt/workflow.ts",
+  "src/product/capabilities.ts",
+  "src/reliability/diagnostics.ts",
+  "src/reliability/drift.ts",
+  "src/state/prompt-cache.ts",
   "scripts/p1/browser-probe.mjs",
   "scripts/p1/text-turn-probe.mjs",
-  "tests/text-turn-probe.test.mjs",
   "docs/ARCHITECTURE.md",
   "docs/FEATURES.md",
   "docs/DEVELOPMENT_PLAN.md",
   "docs/TASKS.md",
+  "docs/RELIABILITY.md",
+  "docs/TROUBLESHOOTING.md",
+  "docs/RELEASE.md",
+  "docs/VALIDATION_CHECKLIST.md",
   "docs/research/P1_BROWSER_AUTOMATION_DECISION.md",
   "docs/research/P1_BROWSER_PROBE_RUNBOOK.md",
-  "docs/research/P1_TEXT_TURN_PROBE_RUNBOOK.md"
+  "docs/research/P1_TEXT_TURN_PROBE_RUNBOOK.md",
+  "docs/research/P10_CONNECTED_APPS_VALIDATION.md"
 ];
 
 for (const path of required) await access(path);
 
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
 if (pkg.name !== "pi-chatgpt-web") throw new Error("unexpected package name");
+if (!/^0\.1\.0-alpha\./.test(pkg.version)) throw new Error("alpha version expected before workstation validation");
 if (!pkg.keywords?.includes("pi-package")) throw new Error("missing pi-package keyword");
 if (!pkg.pi?.extensions?.includes("./src/index.ts")) throw new Error("missing Pi extension entry");
 if (pkg.peerDependencies?.["@earendil-works/pi-coding-agent"] !== "*") {
@@ -32,8 +44,9 @@ if (pkg.peerDependencies?.["@earendil-works/pi-coding-agent"] !== "*") {
 if (pkg.dependencies?.["playwright-core"] !== "1.63.0") {
   throw new Error("P1 browser dependency must stay pinned to playwright-core 1.63.0");
 }
-for (const script of ["p1:turn", "p1:turn:continue", "p1:turn:five"]) {
+for (const script of ["validate", "pack:check", "p1:turn", "p1:turn:continue", "p1:turn:five"]) {
   if (!pkg.scripts?.[script]) throw new Error(`missing ${script} script`);
 }
+if (pkg.publishConfig?.access !== "public") throw new Error("public publishConfig expected");
 
 console.log("structure check: ok");

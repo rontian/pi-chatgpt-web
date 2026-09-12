@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  bootstrap-checks:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,5 +13,5 @@ jobs:
         with:
           node-version: 22
       - run: npm install --ignore-scripts --no-audit --no-fund
-      - run: npm run check
-      - run: npm test
+      - run: npm run validate
+      - run: npm run pack:check

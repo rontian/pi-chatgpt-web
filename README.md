@@ -1,29 +1,34 @@
 # pi-chatgpt-web
 
-`pi-chatgpt-web` is a Pi package that bridges Pi workflows to a user's authenticated ChatGPT Web product session.
+`pi-chatgpt-web` is a Pi package that treats an authenticated ChatGPT Web session as a **product bridge/tool**, not as Pi's primary model provider.
 
-> Status: **P1 Web Feasibility in progress**. The browser automation decision and sanitized persistent-profile auth probe are implemented. A real authenticated ChatGPT text turn is intentionally not implemented until the remaining P1 evidence is observed and recorded.
+> Version: **0.1.0-alpha.0**  
+> Implementation status: P0-P12 architecture/workflow code is present with basic/static/unit validation. Real ChatGPT browser behavior, real Pi TUI operation, helper-model calls, and connected capabilities are intentionally marked **deferred validation** until tested on the user's workstation.
 
-## Goals
+## Intended workflow
 
-- Register a single top-level Pi command: `/chatgpt`.
-- Preserve a subcommand hierarchy such as `/chatgpt status`, `/chatgpt ask`, and `/chatgpt prompt`.
-- Treat ChatGPT Web as a **product bridge/tool**, not as a Pi provider or primary model.
-- Support multi-turn ChatGPT conversations until a workflow reaches its final result.
-- Keep Pi session context separate from ChatGPT conversation context.
-- Optionally use a configurable helper model from Pi/OpenCodex's model registry for context extraction, compression, or fallback classification.
-- Keep the core transport independent from workflow logic so future ChatGPT product capabilities (GitHub, web search, apps, files) can be observed without redesigning the Pi command layer.
+```text
+Pi Session
+   │
+   ▼
+/chatgpt
+   │
+   ├─ ask workflow
+   └─ prompt workflow
+        │
+        ├─ bounded SessionSnapshot
+        ├─ optional helper-model adapter
+        └─ multi-round ChatGPT conversation
+                 │
+                 ▼
+        final Pi execution prompt
+                 │
+          show / edit / send
+```
 
-## Non-goals for the first implementation
+The package keeps Pi Session context and ChatGPT conversation context as separate state machines. It never resends the entire Pi session on every ChatGPT turn.
 
-- No ChatGPT provider registration.
-- No local Pi tool-calling bridge.
-- No GitHub/Web/App control in v0.
-- No bulk repository upload to ChatGPT.
-- No blind retries of ambiguous ChatGPT writes.
-- No credential or cookie export to project files.
-
-## Planned command surface
+## Command surface
 
 ```text
 /chatgpt help
@@ -31,6 +36,7 @@
 /chatgpt login
 /chatgpt logout
 /chatgpt doctor
+/chatgpt capabilities
 
 /chatgpt ask <request>
 
@@ -42,11 +48,14 @@
 /chatgpt prompt inspect
 
 /chatgpt config
+/chatgpt config models
+/chatgpt config assistant <on|off>
+/chatgpt config assistant-model <provider/model|auto>
 ```
 
-Only `help` and the bootstrap `status` path are currently wired. Other commands deliberately report that their milestone is not implemented yet.
+Generated prompts are inserted into the Pi editor by default. They are **not** automatically executed; `/chatgpt prompt send` is explicit.
 
-## Installation during development
+## Installation
 
 From GitHub:
 
@@ -54,61 +63,108 @@ From GitHub:
 pi install git:github.com/rontian/pi-chatgpt-web
 ```
 
-Or try without installing:
+Development / one-shot load:
 
 ```bash
 pi -e git:github.com/rontian/pi-chatgpt-web
 ```
 
-Pi packages may declare extension entry points under the `pi` key in `package.json`; this repository uses `./src/index.ts`.
-
-## P1 browser feasibility probe
-
-P1 currently uses `playwright-core@1.63.0` with installed Chrome and an isolated persistent profile.
+For local development:
 
 ```bash
 npm install
-npm run p1:browser
+npm run validate
+npm run pack:check
 ```
 
-After a successful login, a new process can check profile reuse with:
+## Browser feasibility probes
+
+P1 research uses `playwright-core@1.63.0`, an installed Chrome channel, and an isolated persistent profile.
 
 ```bash
+npm run p1:browser
 npm run p1:browser:check
+npm run p1:turn
+npm run p1:turn:continue
+npm run p1:turn:five
 ```
 
-See `docs/research/P1_BROWSER_PROBE_RUNBOOK.md`. The probe does not print cookies, access tokens, account identifiers, or raw session payloads.
+These probes exist to collect real workstation evidence. Do not interpret repository-only tests as proof that ChatGPT's current Web product protocol works.
 
-## Architecture
+## Helper model
+
+The helper model is optional and comes from Pi/OpenCodex's existing model registry. `pi-chatgpt-web` does not create another provider system.
+
+Default `auto` ranking favors fast/structured-output-friendly model classes such as Luna/Flash, then general DeepSeek-class models. High-reasoning models are deliberately not the default helper choice.
+
+The helper role is limited to context extraction/compression/classification. Core ChatGPT Web analysis remains separate.
+
+## Context model
+
+A `/chatgpt prompt` run receives a one-time bounded projection of the current Pi Session:
+
+- current user request;
+- recent user/assistant messages;
+- optional system/tool results according to config;
+- cwd/project metadata;
+- character budget metadata;
+- optional helper-model compression when wired.
+
+The snapshot is inspectable with `/chatgpt prompt inspect`.
+
+## Multi-round protocol
+
+Prompt workflows do not assume one or two ChatGPT calls. ChatGPT can request more context using the package envelope protocol:
 
 ```text
-Pi Session
-    │
-    ▼
-/chatgpt command
-    │
-    ▼
-Workflow Layer ──────────────── Helper Model Adapter (optional)
-    │                              │
-    │                              └─ context extraction/compression only
-    ▼
-ChatGPT Product Runtime
-    │
-    ├─ Conversation Runtime
-    ├─ Capability Observation
-    └─ Execution Provenance
-    │
-    ▼
-Product Transport
-    │
-    ▼
-Browser/Auth Runtime
-    │
-    ▼
-chatgpt.com
+<pi-chatgpt>{"status":"need_context","requests":[]}</pi-chatgpt>
 ```
 
-See:
+and terminate with:
+
+```text
+<pi-chatgpt>{"status":"final"}</pi-chatgpt>
+```
+
+followed by the final execution prompt. A configurable `maxRounds` prevents unbounded loops.
+
+## Product capabilities
+
+The package models these independently:
+
+```text
+text
+web_search
+github
+apps
+files
+images
+```
+
+States are evidence-based:
+
+```text
+available | unsupported | unknown | unimplemented
+```
+
+GitHub/Web/Apps are **not** marked available merely because the ChatGPT account has a connection or the UI shows a control. Real validation must prove the capability in this conversation path.
+
+## Reliability principles
+
+1. No guessed success from partial browser/UI state.
+2. No blind retry after an `ambiguous` write.
+3. Product observations are normalized and sensitive-looking fields are redacted.
+4. The last completed generated prompt is cached privately under `~/.pi/agent/pi-chatgpt-web/cache/` for reload recovery.
+5. Product/browser/Pi drift should fail closed and be diagnosable.
+6. Browser credentials/profile state never belongs in the project repository.
+
+## Current limitation
+
+The production `BrowserOwnedTransport` is intentionally driver-injected. The repository includes P1 real-browser research probes, but the final real `BrowserTurnDriver` is not wired until those probes are validated on the target workstation. Until then, `/chatgpt ask` and `/chatgpt prompt` fail closed instead of fabricating ChatGPT output.
+
+This boundary is intentional: it lets all workflow/config/context/capability/reliability layers be implemented and tested without encoding an unverified private ChatGPT Web protocol.
+
+## Documentation
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - [`docs/FEATURES.md`](docs/FEATURES.md)
@@ -117,28 +173,17 @@ See:
 - [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md)
 - [`docs/SECURITY.md`](docs/SECURITY.md)
 - [`docs/WEB_FEASIBILITY.md`](docs/WEB_FEASIBILITY.md)
+- [`docs/RELIABILITY.md`](docs/RELIABILITY.md)
+- [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
+- [`docs/VALIDATION_CHECKLIST.md`](docs/VALIDATION_CHECKLIST.md)
+- [`docs/RELEASE.md`](docs/RELEASE.md)
 - [`docs/TASKS.md`](docs/TASKS.md)
 
-## Development
+## Validation status
 
-```bash
-npm install
-npm run check
-npm test
-```
+Repository validation covers structure, source contracts, workflow invariants, secret-redaction rules, package metadata, and research-probe logic. The full workstation matrix is in `docs/VALIDATION_CHECKLIST.md`.
 
-The browser research dependency is `playwright-core`, which does not download a bundled browser. The P1 probe uses an installed Chrome channel and a dedicated package profile.
-
-## Project principles
-
-1. **Core before workflow.** Prove authenticated ChatGPT Web text turns before implementing prompt orchestration.
-2. **No guessed private protocol.** Capture and document observed behavior; do not encode speculative payloads.
-3. **Browser-owned protected writes.** Prefer a real authenticated browser context for protected product writes unless testing proves a safer/stabler alternative.
-4. **Canonical readback.** A successful write is not final until the resulting conversation state is read back and reconciled.
-5. **Ambiguous writes are not retryable by default.** If a timeout happens after a possibly-successful write, reconcile first.
-6. **Contexts remain separate.** Pi Session and ChatGPT Conversation are independent state machines.
-7. **Helper model is optional.** The product bridge must remain usable without another model.
-8. **Product capabilities are observed, not assumed.** Account-connected GitHub/web/apps are future capabilities to verify experimentally.
+A stable/non-alpha release should not be cut until that real environment matrix passes.
 
 ## License
 
