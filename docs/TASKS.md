@@ -19,8 +19,9 @@ Status values: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`.
 
 ## P1 — Web Feasibility Gate
 
-- TODO — Select prototype Chromium automation dependency.
-- TODO — Implement interactive persistent-profile login prototype.
+- DONE — Select prototype Chromium automation dependency: `playwright-core@1.63.0` + branded Chrome + isolated persistent profile.
+- DONE — Implement interactive persistent-profile login/auth probe harness (implementation/unit validation only).
+- TODO — Run fresh real-account interactive login probe and record evidence.
 - TODO — Verify auth reuse after process restart.
 - TODO — Observe one browser-owned ChatGPT text turn.
 - TODO — Determine canonical conversation readback source.

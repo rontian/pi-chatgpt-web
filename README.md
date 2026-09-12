@@ -2,7 +2,7 @@
 
 `pi-chatgpt-web` is a Pi package that bridges Pi workflows to a user's authenticated ChatGPT Web product session.
 
-> Status: **architecture/bootstrap only**. The repository intentionally does **not** yet implement or reverse-engineer ChatGPT Web private request protocols. The first implementation milestone is a feasibility gate for authenticated browser-owned text turns.
+> Status: **P1 Web Feasibility in progress**. The browser automation decision and sanitized persistent-profile auth probe are implemented. A real authenticated ChatGPT text turn is intentionally not implemented until the remaining P1 evidence is observed and recorded.
 
 ## Goals
 
@@ -62,6 +62,23 @@ pi -e git:github.com/rontian/pi-chatgpt-web
 
 Pi packages may declare extension entry points under the `pi` key in `package.json`; this repository uses `./src/index.ts`.
 
+## P1 browser feasibility probe
+
+P1 currently uses `playwright-core@1.63.0` with installed Chrome and an isolated persistent profile.
+
+```bash
+npm install
+npm run p1:browser
+```
+
+After a successful login, a new process can check profile reuse with:
+
+```bash
+npm run p1:browser:check
+```
+
+See `docs/research/P1_BROWSER_PROBE_RUNBOOK.md`. The probe does not print cookies, access tokens, account identifiers, or raw session payloads.
+
 ## Architecture
 
 ```text
@@ -105,11 +122,12 @@ See:
 ## Development
 
 ```bash
+npm install
 npm run check
 npm test
 ```
 
-The bootstrap has no third-party runtime dependency. Browser automation dependencies will only be introduced after the Web Feasibility Gate selects the transport strategy.
+The browser research dependency is `playwright-core`, which does not download a bundled browser. The P1 probe uses an installed Chrome channel and a dedicated package profile.
 
 ## Project principles
 

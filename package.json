@@ -21,6 +21,9 @@
   "engines": {
     "node": ">=22"
   },
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
   },
@@ -31,6 +34,8 @@
   },
   "scripts": {
     "check": "node ./scripts/check-structure.mjs",
-    "test": "node --test ./tests/*.test.mjs"
+    "test": "node --test ./tests/*.test.mjs",
+    "p1:browser": "node ./scripts/p1/browser-probe.mjs",
+    "p1:browser:check": "node ./scripts/p1/browser-probe.mjs --check-only --json"
   }
 }

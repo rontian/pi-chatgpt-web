@@ -4,7 +4,17 @@ P1 must answer these questions with observed evidence before `BrowserOwnedTransp
 
 ## A. Browser choice
 
-Evaluate a maintained Chromium automation path that supports:
+Selected for P1 research on 2026-09-12:
+
+```text
+playwright-core@1.63.0
++ branded Chrome channel
++ isolated persistent profile
+```
+
+Decision rationale and constraints are recorded in `docs/research/P1_BROWSER_AUTOMATION_DECISION.md`.
+
+The selected path supports:
 
 - persistent user data directory;
 - visible interactive login;
@@ -14,7 +24,7 @@ Evaluate a maintained Chromium automation path that supports:
 - network/DOM observation for research;
 - minimal credential extraction.
 
-Do not commit to a dependency until the prototype proves it is required.
+The dedicated profile must not be the user's daily Chrome profile.
 
 ## B. Authentication
 
@@ -26,6 +36,8 @@ Verify:
 - expired session detection;
 - logout/reset;
 - account switching behavior.
+
+The P1 browser/auth probe is documented in `docs/research/P1_BROWSER_PROBE_RUNBOOK.md`.
 
 ## C. Write path
 

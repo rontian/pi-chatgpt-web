@@ -8,10 +8,13 @@ const required = [
   "src/runtime/chatgpt-runtime.ts",
   "src/transport/transport.ts",
   "src/transport/browser-owned.ts",
+  "scripts/p1/browser-probe.mjs",
   "docs/ARCHITECTURE.md",
   "docs/FEATURES.md",
   "docs/DEVELOPMENT_PLAN.md",
-  "docs/TASKS.md"
+  "docs/TASKS.md",
+  "docs/research/P1_BROWSER_AUTOMATION_DECISION.md",
+  "docs/research/P1_BROWSER_PROBE_RUNBOOK.md"
 ];
 
 for (const path of required) await access(path);
@@ -22,6 +25,9 @@ if (!pkg.keywords?.includes("pi-package")) throw new Error("missing pi-package k
 if (!pkg.pi?.extensions?.includes("./src/index.ts")) throw new Error("missing Pi extension entry");
 if (pkg.peerDependencies?.["@earendil-works/pi-coding-agent"] !== "*") {
   throw new Error("Pi core package must be a peer dependency with '*' range");
+}
+if (pkg.dependencies?.["playwright-core"] !== "1.63.0") {
+  throw new Error("P1 browser dependency must stay pinned to playwright-core 1.63.0");
 }
 
 console.log("structure check: ok");
