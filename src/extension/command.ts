@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { parseChatGPTCommand } from "./parse-command.js";
 import { ChatGPTCommandServices } from "./services.js";
+import { PromptController } from "./prompt-controller.js";
 import { loadConfig, saveConfig } from "../config/loader.js";
 import { listModelKeys, resolveAssistantModel } from "../assistant/model-catalog.js";
 
@@ -8,6 +9,7 @@ const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n 
 
 export function registerChatGPTCommand(pi: ExtensionAPI) {
   const services = new ChatGPTCommandServices();
+  const prompts = new PromptController(pi, services);
 
   pi.registerCommand("chatgpt", {
     description: "Use ChatGPT Web workflows and inspect pi-chatgpt-web state",
@@ -18,9 +20,7 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
 
         if (command.kind === "status") {
           const { config, health } = await services.status();
-          const resolved = config.assistant.enabled
-            ? resolveAssistantModel(ctx.modelRegistry, config.assistant.model)
-            : null;
+          const resolved = config.assistant.enabled ? resolveAssistantModel(ctx.modelRegistry, config.assistant.model) : null;
           return ctx.ui.notify([
             "pi-chatgpt-web status",
             `transport: ${health.ok ? "ready" : "not ready"}`,
@@ -31,11 +31,11 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
         }
 
         if (command.kind === "login") {
-          return ctx.ui.notify("Browser login is currently validated through the local P1 probe: npm run p1:browser. Production driver wiring remains deferred until that probe passes on this workstation.", "info");
+          return ctx.ui.notify("Run the local P1 login probe (`npm run p1:browser`) from the package checkout. Production browser-driver wiring remains gated by local validation.", "info");
         }
 
         if (command.kind === "logout") {
-          return ctx.ui.notify("Logout/reset is intentionally not automatic before local browser-profile validation. Remove/reset the isolated package profile only after reviewing docs/research/P1_BROWSER_PROBE_RUNBOOK.md.", "warning");
+          return ctx.ui.notify("Automatic browser-profile reset remains gated by local validation. See docs/research/P1_BROWSER_PROBE_RUNBOOK.md.", "warning");
         }
 
         if (command.kind === "doctor") {
@@ -50,6 +50,24 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
             return ctx.ui.notify(`ChatGPT ask did not complete: ${result.status}${result.text ? `\n${result.text}` : ""}`, "warning");
           }
           return ctx.ui.notify(result.text, "info");
+        }
+
+        if (command.kind === "prompt") {
+          if (command.action === "show") return prompts.show(ctx);
+          if (command.action === "edit") return await prompts.edit(ctx);
+          if (command.action === "send") return prompts.send(ctx);
+          if (command.action === "inspect") return prompts.inspect(ctx);
+          if (command.action === "retry") {
+            const result = await prompts.retry(ctx);
+            if (result.status === "completed" && result.text) ctx.ui.setEditorText(result.text);
+            return ctx.ui.notify(result.status === "completed" ? "Prompt regenerated and inserted into the Pi editor." : result.error ?? "Prompt retry failed.", result.status === "completed" ? "info" : "warning");
+          }
+          const result = await prompts.run(command.text, ctx);
+          if (result.status === "completed" && result.text) {
+            ctx.ui.setEditorText(result.text);
+            return ctx.ui.notify("Prompt generated and inserted into the Pi editor. Use /chatgpt prompt send to execute it.", "info");
+          }
+          return ctx.ui.notify(result.error ?? "Prompt workflow failed.", "warning");
         }
 
         if (command.kind === "config") {
@@ -75,10 +93,6 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
             return ctx.ui.notify(`Helper model ${config.assistant.enabled ? "enabled" : "disabled"}`, "info");
           }
           return ctx.ui.notify(`Unknown config action: ${command.action}`, "warning");
-        }
-
-        if (command.kind === "prompt") {
-          return ctx.ui.notify("Prompt workflow is implemented in the next planned phase group.", "info");
         }
 
         return ctx.ui.notify(`Unknown /chatgpt subcommand: ${command.tokens.join(" ")}`, "warning");
