@@ -185,17 +185,20 @@ async function sendViaUi(page, prompt) {
   return { composerSelector: composer.selector, sendSelector: send?.selector ?? "<Enter>" };
 }
 
-async function waitForAssistant(page, beforeCount, timeoutMs) {
+async function waitForAssistant(page, beforeCount, timeoutMs, beforeText = "") {
   const startedAt = Date.now();
   let lastText = "";
   let stableSince = 0;
   let observedSelector = null;
+  const normalizedBefore = normalizeText(beforeText);
 
   while (Date.now() - startedAt < timeoutMs) {
     const current = await countByCandidates(page, ASSISTANT_SELECTORS);
-    if (current.count > beforeCount) {
-      observedSelector = current.selector;
-      const text = await latestText(page, ASSISTANT_SELECTORS);
+    const text = await latestText(page, ASSISTANT_SELECTORS);
+    const countAdvanced = current.count > beforeCount;
+    const textAdvanced = Boolean(text) && text !== normalizedBefore;
+    if (countAdvanced || textAdvanced) {
+      observedSelector = current.selector ?? observedSelector;
       if (text && text === lastText) {
         if (!stableSince) stableSince = Date.now();
       } else {
@@ -211,7 +214,12 @@ async function waitForAssistant(page, beforeCount, timeoutMs) {
     await page.waitForTimeout(250);
   }
 
-  throw new Error("Timed out waiting for a stable assistant response.");
+  const final = await countByCandidates(page, ASSISTANT_SELECTORS);
+  const finalText = await latestText(page, ASSISTANT_SELECTORS);
+  const generating = await anyVisible(page, STOP_SELECTORS);
+  throw new Error(
+    `Timed out waiting for a stable assistant response. beforeCount=${beforeCount} afterCount=${final.count} generating=${generating} latestLength=${finalText.length} changed=${finalText !== normalizedBefore}`
+  );
 }
 
 function printHelp() {
@@ -256,9 +264,10 @@ async function main() {
       const prompt = buildPrompt({ turn, firstToken, token });
       const expected = expectedReply({ turn, firstToken, token });
       const before = await countByCandidates(page, ASSISTANT_SELECTORS);
+      const beforeText = await latestText(page, ASSISTANT_SELECTORS);
       const startedAt = Date.now();
       const used = await sendViaUi(page, prompt);
-      const response = await waitForAssistant(page, before.count, options.timeoutMs);
+      const response = await waitForAssistant(page, before.count, options.timeoutMs, beforeText);
       const conversationId = extractConversationId(page.url());
       canonicalConversationId ??= conversationId;
       selectors ??= { ...used, assistantSelector: response.assistantSelector };
