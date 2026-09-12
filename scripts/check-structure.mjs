@@ -16,6 +16,8 @@ const required = [
   "src/reliability/drift.ts",
   "src/state/prompt-cache.ts",
   "scripts/p1/browser-probe.mjs",
+  "scripts/p1/browser-probe-helpers.mjs",
+  "scripts/p1/native-chrome-host.mjs",
   "scripts/p1/text-turn-probe.mjs",
   "docs/ARCHITECTURE.md",
   "docs/FEATURES.md",

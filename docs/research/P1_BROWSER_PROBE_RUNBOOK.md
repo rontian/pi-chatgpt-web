@@ -2,6 +2,17 @@
 
 This runbook validates the first P1 browser/auth assumptions on a real workstation. It does **not** send a ChatGPT prompt yet.
 
+## Architecture
+
+P1 uses a native Chrome host with an isolated profile. Playwright attaches over loopback CDP; it does not launch the interactive authentication browser.
+
+- executable: installed Google Chrome (macOS default `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`)
+- profile: `~/.pi/agent/pi-chatgpt-web/browser-profile`
+- CDP: `--remote-debugging-address=127.0.0.1` and `--remote-debugging-port=0`
+- attach: `chromium.connectOverCDP(http://127.0.0.1:<port>)`
+
+The host starts Chrome with `child_process.spawn(executable, argv)`. It does not use a shell string, `--no-sandbox`, `--disable-web-security`, or Playwright's `launchPersistentContext()` argument set.
+
 ## Prerequisites
 
 - Node.js 22+
@@ -12,9 +23,11 @@ This runbook validates the first P1 browser/auth assumptions on a real workstati
 npm install
 ```
 
-## Proxy-dependent Chrome setups
+## Network
 
-The P1 probe uses an isolated Chrome profile at `~/.pi/agent/pi-chatgpt-web/browser-profile`. If normal Chrome reaches ChatGPT through a proxy extension, that extension is not automatically available in the isolated profile. Configure the proxy explicitly:
+Native Chrome inherits the workstation's ordinary browser network: system proxy, TUN, or VPN. In the common case **do not** configure a pi-chatgpt-web proxy.
+
+Use an explicit override only when the isolated Chrome window cannot reach ChatGPT on that default network:
 
 ```bash
 export PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890
@@ -31,10 +44,10 @@ Proxy precedence is:
 ```text
 --proxy <url>
 > PI_CHATGPT_WEB_PROXY
-> no proxy
+> browser/system default
 ```
 
-An unset or blank environment variable means no proxy. Empty explicit `--proxy` values, malformed URLs, and unsupported schemes are rejected before Chrome starts. The same proxy parsing and Playwright launch helper is used by both the browser-auth and text-turn probes.
+An unset or blank environment variable means Chrome is launched without `--proxy-server`. Empty explicit `--proxy` values, malformed URLs, and unsupported schemes are rejected before Chrome starts. Both browser-auth and text-turn probes share this native Chrome host.
 
 ## Fresh interactive login
 
@@ -44,13 +57,15 @@ Run:
 npm run p1:browser
 ```
 
-The probe opens the dedicated Chrome profile at:
+The probe spawns ordinary Google Chrome with the dedicated profile at:
 
 ```text
 ~/.pi/agent/pi-chatgpt-web/browser-profile
 ```
 
-If the profile is not authenticated, finish the normal ChatGPT login in the opened browser and return to the terminal. The probe then rechecks authentication and closes the browser.
+Interactive login opens `https://chatgpt.com/` in ordinary Chrome **without remote debugging**. Finish a normal ChatGPT login, including Cloudflare if shown, in that visible window. The probe never types passwords, OTPs, or CAPTCHA and does not solve Turnstile.
+
+After the ChatGPT composer is visible, return to the terminal and confirm. The probe then closes that login window, relaunches the same isolated profile with loopback CDP, runs the sanitized auth check, and closes the Chrome process it started.
 
 Expected success includes:
 
@@ -76,9 +91,9 @@ After a successful fresh login, start a new process:
 npm run p1:browser:check
 ```
 
-This is non-interactive and prints sanitized JSON. It must report `authenticated: true` without another login prompt before the P1 restart-reuse task can be marked DONE.
+This is non-interactive. It spawns the same native Chrome host, attaches over CDP immediately, and prints sanitized JSON. It never prompts for login. It must report `authenticated: true` without another login prompt before the P1 restart-reuse task can be marked DONE.
 
-Then use the same profile and proxy configuration for text-turn validation:
+Then use the same profile and optional proxy override for text-turn validation:
 
 ```bash
 npm run p1:turn
@@ -86,13 +101,14 @@ npm run p1:turn:continue
 npm run p1:turn:five
 ```
 
+If the text-turn probe is not authenticated, it fails closed and asks you to run `npm run p1:browser` first.
+
 ## Alternate browser channel/profile
 
 ```bash
 node scripts/p1/browser-probe.mjs \
   --channel chrome-beta \
-  --profile-dir ~/.pi/agent/pi-chatgpt-web/browser-profile-beta \
-  --proxy http://127.0.0.1:7890
+  --profile-dir ~/.pi/agent/pi-chatgpt-web/browser-profile-beta
 ```
 
 Environment equivalents:
@@ -101,9 +117,12 @@ Environment equivalents:
 PI_CHATGPT_WEB_BROWSER_CHANNEL
 PI_CHATGPT_WEB_BROWSER_PROFILE
 PI_CHATGPT_WEB_PROXY
+PI_CHATGPT_WEB_CHROME_EXECUTABLE
 ```
 
-Both P1 probes launch Chromium with `chromiumSandbox: true`; they do not opt into `--no-sandbox`.
+## Profile ownership
+
+The isolated `--user-data-dir` cannot be written by two Chrome processes at once. The native host takes a profile lock. If another P1 probe or a Chrome window already owns the profile, the new probe fails clearly and does not kill unknown Chrome processes.
 
 ## Security checks
 
@@ -116,7 +135,7 @@ Do not commit or paste:
 - user email addresses or account identifiers;
 - browser/network captures containing session headers.
 
-The probe intentionally emits only sanitized state such as `authenticated`, `authSource`, `sessionEndpointStatus`, and whether a proxy was configured. It does not echo the proxy URL, which may contain credentials in some environments.
+The probe intentionally emits only sanitized state such as `authenticated`, `authSource`, `sessionEndpointStatus`, and whether a proxy override was configured. It does not echo the proxy URL, which may contain credentials in some environments.
 
 ## Evidence to record for P1
 
@@ -126,7 +145,8 @@ Record non-secret facts only:
 - Node version;
 - Chrome version/channel;
 - Playwright Core version;
-- whether an explicit proxy was required;
+- whether default system/TUN/VPN network was enough;
+- whether an explicit proxy override was required;
 - whether fresh login succeeded;
 - whether a new process reused authentication;
 - `authSource` used for the successful check;

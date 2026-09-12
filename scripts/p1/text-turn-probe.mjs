@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import process from "node:process";
 import {
   AUTH_COMPOSER_SELECTORS,
-  buildPersistentContextOptions,
   extractProxyOption,
   probeAuthentication,
 } from "./browser-probe-helpers.mjs";
-
-const CHATGPT_URL = "https://chatgpt.com/";
-const DEFAULT_PROFILE_DIR = join(homedir(), ".pi", "agent", "pi-chatgpt-web", "browser-profile");
+import {
+  CHATGPT_URL,
+  DEFAULT_PROFILE_DIR,
+  closeNativeChromeSession,
+  connectPlaywrightOverCdp,
+  getOrOpenChatgptPage,
+  launchNativeChromeSession,
+} from "./native-chrome-host.mjs";
 
 export const COMPOSER_SELECTORS = AUTH_COMPOSER_SELECTORS;
 
@@ -113,6 +115,13 @@ export function summarizeTurn({ turn, expected, actual, conversationId, elapsedM
   };
 }
 
+export const TEXT_TURN_UNAUTHENTICATED_MESSAGE =
+  "ChatGPT profile is not authenticated. Run npm run p1:browser first.";
+
+export function assertAuthenticatedForTextTurn(auth) {
+  if (!auth?.authenticated) throw new Error(TEXT_TURN_UNAUTHENTICATED_MESSAGE);
+}
+
 export function extractConversationId(url) {
   try {
     const parsed = new URL(url);
@@ -206,7 +215,7 @@ async function waitForAssistant(page, beforeCount, timeoutMs) {
 }
 
 function printHelp() {
-  console.log(`P1 ChatGPT text-turn UI probe\n\nUsage:\n  npm run p1:turn\n  npm run p1:turn:continue\n  npm run p1:turn:five\n\nOptions:\n  --turns <1..5>\n  --channel <name>\n  --profile-dir <path>\n  --proxy <url>\n  --headless\n  --timeout-ms <ms>\n  --json\n  --keep-open\n\nEnvironment:\n  PI_CHATGPT_WEB_BROWSER_CHANNEL\n  PI_CHATGPT_WEB_BROWSER_PROFILE\n  PI_CHATGPT_WEB_PROXY\n`);
+  console.log(`P1 ChatGPT text-turn UI probe\n\nUsage:\n  npm run p1:turn\n  npm run p1:turn:continue\n  npm run p1:turn:five\n\nOptions:\n  --turns <1..5>\n  --channel <name>\n  --profile-dir <path>\n  --proxy <url>\n  --headless\n  --timeout-ms <ms>\n  --json\n  --keep-open\n\nEnvironment:\n  PI_CHATGPT_WEB_BROWSER_CHANNEL\n  PI_CHATGPT_WEB_BROWSER_PROFILE\n  PI_CHATGPT_WEB_PROXY\n  PI_CHATGPT_WEB_CHROME_EXECUTABLE\n`);
 }
 
 async function loadPlaywright() {
@@ -217,23 +226,24 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) return printHelp();
 
-  await mkdir(options.profileDir, { recursive: true });
   const { chromium } = await loadPlaywright();
   const require = createRequire(import.meta.url);
   const playwrightVersion = require("playwright-core/package.json").version;
-  const context = await chromium.launchPersistentContext(
-    options.profileDir,
-    buildPersistentContextOptions(options)
-  );
+  const session = await launchNativeChromeSession({
+    channel: options.channel,
+    profileDir: options.profileDir,
+    proxy: options.proxy,
+    headless: options.headless,
+    startUrl: CHATGPT_URL,
+  });
 
   try {
-    const page = context.pages()[0] ?? (await context.newPage());
-    await page.goto(CHATGPT_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    const browser = await connectPlaywrightOverCdp(chromium, session.endpoint);
+    session.browser = browser;
+    const page = await getOrOpenChatgptPage(browser);
 
     const auth = await probeAuthentication(page);
-    if (!auth.authenticated) {
-      throw new Error("ChatGPT profile is not authenticated. Run npm run p1:browser first.");
-    }
+    assertAuthenticatedForTextTurn(auth);
 
     const seed = randomBytes(5).toString("hex");
     const firstToken = buildProbeToken(seed, 1);
@@ -274,6 +284,7 @@ async function main() {
       playwrightVersion,
       channel: options.channel,
       proxyConfigured: Boolean(options.proxy),
+      proxyOverrideConfigured: Boolean(options.proxy),
       ...auth,
       turnsRequested: options.turns,
       turnsPassed: results.filter((item) => item.exactMatch).length,
@@ -287,7 +298,7 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
     if (options.keepOpen) await new Promise(() => {});
   } finally {
-    if (!options.keepOpen) await context.close();
+    if (!options.keepOpen) await closeNativeChromeSession(session);
   }
 }
 

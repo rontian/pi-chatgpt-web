@@ -5,7 +5,7 @@ Date: 2026-09-12
 
 ## Decision
 
-Use `playwright-core@1.63.0` with the branded Chrome `channel: "chrome"` and an isolated persistent user-data directory.
+Use installed Google Chrome as a native host with an isolated user-data directory, then attach Playwright over loopback CDP.
 
 Default profile:
 
@@ -15,13 +15,13 @@ Default profile:
 
 This is a P1 research dependency and does not yet implement `BrowserOwnedTransport.sendTurn()`.
 
-## Why Playwright Core
+## Why native Chrome + CDP
 
-- `launchPersistentContext()` directly models the persistent browser profile needed for one-time interactive login and later reuse.
-- The Chrome channel can use the user's installed Chrome without downloading a second browser runtime.
-- Page lifecycle and network/DOM observation APIs are available for P1 research.
-- Playwright documents `connectOverCDP()` as lower fidelity than its native protocol, so attaching to a daily-driver browser is not the default architecture.
-- `playwright-core` is the no-browser package, keeping installation smaller and preventing automatic browser downloads.
+- Interactive ChatGPT login happens in ordinary Chrome, so the session inherits system proxy / TUN / VPN instead of Playwright's curated Chromium flags.
+- `launchPersistentContext()` is not treated as equivalent to a user Chrome: Playwright adds flags such as `--disable-extensions`, `--password-store=basic`, and `--use-mock-keychain`.
+- Chrome 136+ requires `--remote-debugging-port` to be paired with a non-default `--user-data-dir`; the isolated P1 profile satisfies that constraint.
+- Playwright still supplies page/DOM APIs through `connectOverCDP()` after the human has finished login.
+- `playwright-core@1.63.0` remains the no-browser package for the CDP client only.
 
 ## Isolation rules
 

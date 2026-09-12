@@ -79,15 +79,17 @@ npm run pack:check
 
 ## Browser feasibility probes
 
-P1 research uses `playwright-core@1.63.0`, an installed Chrome channel, and an isolated persistent profile.
+P1 research uses a native Google Chrome host with an isolated profile. Playwright attaches over loopback CDP; it does not launch the interactive authentication browser.
 
-If normal Chrome reaches ChatGPT through a proxy extension, the isolated P1 Chrome profile does **not** automatically inherit that extension. Configure the proxy explicitly before browser/auth and text-turn validation:
+Default network is whatever ordinary Chrome already uses on this machine, including macOS system proxy, TUN, or VPN routing. Do **not** set `PI_CHATGPT_WEB_PROXY` unless that isolated Chrome window cannot reach ChatGPT on the default network.
+
+Optional override, only when needed:
 
 ```bash
 export PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890
 ```
 
-The proxy URL is not hard-coded; `--proxy <url>` overrides `PI_CHATGPT_WEB_PROXY`, and an unset/blank environment variable means no proxy. The probes pass the selected server to Playwright's `proxy.server` and keep Chromium sandboxing enabled.
+`--proxy <url>` overrides `PI_CHATGPT_WEB_PROXY`. An unset/blank environment variable means no `--proxy-server` flag is passed to Chrome. The proxy belongs to the native Chrome process, not to Playwright `connectOverCDP()`.
 
 ```bash
 npm run p1:browser

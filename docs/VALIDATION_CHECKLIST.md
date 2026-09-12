@@ -15,26 +15,30 @@ This checklist is intentionally deferred until the repository is pulled to the u
 
 ## B. Browser authentication
 
-If normal Chrome depends on a proxy extension, remember that the isolated P1 profile does not automatically inherit it. Configure the equivalent explicit proxy first, for example:
+P1 uses a native Chrome host with an isolated profile. Playwright attaches over loopback CDP after interactive login, and immediately for `--check-only`.
+
+Default: leave `PI_CHATGPT_WEB_PROXY` unset so native Chrome inherits system proxy / TUN / VPN. Set an explicit override only if that isolated Chrome window cannot reach ChatGPT:
 
 ```bash
 export PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890
 ```
 
-`--proxy <url>` overrides the environment value. Leave the environment variable unset/blank for direct access.
+`--proxy <url>` overrides the environment value.
 
-- [ ] `npm run p1:browser` fresh login succeeds
+- [ ] `npm run p1:browser` opens ordinary Google Chrome, not a Playwright-owned browser
+- [ ] `npm run p1:browser` fresh login succeeds (`authenticated: true`)
 - [ ] `npm run p1:browser:check` succeeds in a new process
 - [ ] output reports `authSource` as `session`, `ui`, or `session+ui`
 - [ ] browser profile is isolated from normal Chrome
-- [ ] proxy-dependent setup works with explicit `PI_CHATGPT_WEB_PROXY`
+- [ ] default network is used unless isolated Chrome cannot reach ChatGPT
+- [ ] optional `PI_CHATGPT_WEB_PROXY` override works when required
 - [ ] expired login produces a controlled error
 - [ ] no cookies, access tokens, raw session payloads, email addresses, or account identifiers appear in probe output
-- [ ] Chromium sandbox remains enabled
+- [ ] native Chrome is launched without `--no-sandbox` / `--disable-web-security`
 
 ## C. Text turns
 
-Use the same `PI_CHATGPT_WEB_PROXY` value, when required, for all text-turn commands:
+Use the same optional `PI_CHATGPT_WEB_PROXY` value, when required, for all text-turn commands:
 
 ```bash
 npm run p1:turn

@@ -72,16 +72,6 @@ export function extractProxyOption(argv, env = process.env) {
   return { args, proxy };
 }
 
-export function buildPersistentContextOptions({ channel, headless, proxy }) {
-  return {
-    channel,
-    headless,
-    viewport: null,
-    chromiumSandbox: true,
-    ...(proxy ? { proxy: { server: proxy } } : {}),
-  };
-}
-
 export function classifyAuthentication({
   sessionAuthenticated = false,
   uiAuthenticated = false,

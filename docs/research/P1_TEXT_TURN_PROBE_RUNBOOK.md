@@ -4,6 +4,8 @@ Status: **probe implementation ready; real-account evidence still required**.
 
 This probe uses the authenticated ChatGPT page UI to perform a research-only text turn. It deliberately does **not** implement the production `BrowserOwnedTransport` and it does **not** decide the final canonical readback plane.
 
+It reuses the same native Chrome host as the browser-auth probe: isolated profile, optional proxy override, loopback CDP, then `connectOverCDP()`. It does not call `launchPersistentContext()`.
+
 ## Prerequisite
 
 First complete the auth probe:

@@ -1,28 +1,24 @@
 #!/usr/bin/env node
-import { mkdir } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import process from "node:process";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { createRequire } from "node:module";
 import {
-  buildPersistentContextOptions,
   extractProxyOption,
   probeAuthentication,
   sanitizeAuthProbe,
   sanitizeSessionProbe,
 } from "./browser-probe-helpers.mjs";
-
-const CHATGPT_URL = "https://chatgpt.com/";
-const DEFAULT_PROFILE_DIR = join(
-  homedir(),
-  ".pi",
-  "agent",
-  "pi-chatgpt-web",
-  "browser-profile"
-);
+import {
+  CHATGPT_URL,
+  DEFAULT_PROFILE_DIR,
+  closeNativeChromeSession,
+  connectPlaywrightOverCdp,
+  getOrOpenChatgptPage,
+  launchNativeChromeSession,
+} from "./native-chrome-host.mjs";
 
 export function parseArgs(argv, env = process.env) {
   const { args, proxy } = extractProxyOption(argv, env);
@@ -55,6 +51,12 @@ export function parseArgs(argv, env = process.env) {
 
 export { sanitizeAuthProbe, sanitizeSessionProbe };
 
+export function browserProbeAttachPolicy(options) {
+  return options.checkOnly || options.headless
+    ? "attach-immediately"
+    : "login-without-cdp-then-reattach";
+}
+
 function printHelp() {
   console.log(`P1 browser feasibility probe
 
@@ -64,9 +66,9 @@ Usage:
   node scripts/p1/browser-probe.mjs [options]
 
 Options:
-  --channel <name>       Playwright browser channel (default: chrome)
-  --profile-dir <path>   Isolated persistent profile directory
-  --proxy <url>          Explicit HTTP/HTTPS/SOCKS proxy server
+  --channel <name>       Installed Chrome channel (default: chrome)
+  --profile-dir <path>   Isolated native Chrome profile directory
+  --proxy <url>          Optional native Chrome proxy override
   --headless             Run Chrome without a visible window
   --check-only           Do not pause for interactive login
   --json                 Print the final result as JSON
@@ -77,6 +79,7 @@ Environment:
   PI_CHATGPT_WEB_BROWSER_CHANNEL
   PI_CHATGPT_WEB_BROWSER_PROFILE
   PI_CHATGPT_WEB_PROXY
+  PI_CHATGPT_WEB_CHROME_EXECUTABLE
 `);
 }
 
@@ -91,6 +94,34 @@ async function loadPlaywright() {
   }
 }
 
+async function waitForInteractiveLoginConfirmation() {
+  console.log(
+    [
+      `Opened ordinary Google Chrome with the isolated P1 profile.`,
+      `This login window does not enable remote debugging.`,
+      `If ChatGPT composer is already visible, return here and confirm.`,
+      `If not signed in, finish login, Cloudflare, password, and OTP in that window.`,
+      `This probe will not type a password, OTP, or CAPTCHA.`,
+      `After the composer is visible, return to this terminal and confirm.`,
+      `The probe will then close that window and reopen the same profile over loopback CDP.`,
+    ].join("\n")
+  );
+  const rl = readline.createInterface({ input, output });
+  try {
+    await rl.question("After ChatGPT composer is visible, press Enter to reopen over CDP and probe...");
+  } finally {
+    rl.close();
+  }
+}
+
+async function attachAndProbe({ chromium, session }) {
+  const browser = await connectPlaywrightOverCdp(chromium, session.endpoint);
+  session.browser = browser;
+  const page = await getOrOpenChatgptPage(browser);
+  const auth = await probeAuthentication(page);
+  return { page, auth };
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
@@ -98,46 +129,34 @@ async function main() {
     return;
   }
 
-  await mkdir(options.profileDir, { recursive: true });
-
   const { chromium } = await loadPlaywright();
   const require = createRequire(import.meta.url);
   const playwrightVersion = require("playwright-core/package.json").version;
-
-  const context = await chromium.launchPersistentContext(
-    options.profileDir,
-    buildPersistentContextOptions(options)
-  );
+  const interactiveLogin = !options.checkOnly && !options.headless;
+  let session = await launchNativeChromeSession({
+    channel: options.channel,
+    profileDir: options.profileDir,
+    proxy: options.proxy,
+    headless: options.headless,
+    startUrl: CHATGPT_URL,
+    enableCdp: !interactiveLogin,
+  });
 
   try {
-    const pages = context.pages();
-    const page = pages[0] ?? (await context.newPage());
-
-    await page.goto(CHATGPT_URL, {
-      waitUntil: "domcontentloaded",
-      timeout: 60_000,
-    });
-
-    let auth = await probeAuthentication(page);
-
-    if (!auth.authenticated && !options.checkOnly && !options.headless) {
-      console.log(
-        "ChatGPT is not authenticated in the isolated profile. Complete login in the opened Chrome window."
-      );
-      const rl = readline.createInterface({ input, output });
-      try {
-        await rl.question("After login is complete, press Enter to probe again...");
-      } finally {
-        rl.close();
-      }
-
-      await page.goto(CHATGPT_URL, {
-        waitUntil: "domcontentloaded",
-        timeout: 60_000,
+    if (interactiveLogin) {
+      await waitForInteractiveLoginConfirmation();
+      await closeNativeChromeSession(session);
+      session = await launchNativeChromeSession({
+        channel: options.channel,
+        profileDir: options.profileDir,
+        proxy: options.proxy,
+        headless: options.headless,
+        startUrl: CHATGPT_URL,
+        enableCdp: true,
       });
-      auth = await probeAuthentication(page);
     }
 
+    const { page, auth } = await attachAndProbe({ chromium, session });
     const result = {
       phase: "P1",
       probe: "browser-auth",
@@ -145,6 +164,7 @@ async function main() {
       channel: options.channel,
       profileDir: options.profileDir,
       proxyConfigured: Boolean(options.proxy),
+      proxyOverrideConfigured: Boolean(options.proxy),
       pageUrl: page.url(),
       pageTitle: await page.title(),
       ...auth,
@@ -170,7 +190,7 @@ async function main() {
 
     if (!result.authenticated) process.exitCode = 2;
   } finally {
-    await context.close();
+    await closeNativeChromeSession(session, { keepOpen: false });
   }
 }
 

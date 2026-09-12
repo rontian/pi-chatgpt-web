@@ -8,6 +8,8 @@ import {
   expectedReply,
   summarizeTurn,
   extractConversationId,
+  assertAuthenticatedForTextTurn,
+  TEXT_TURN_UNAUTHENTICATED_MESSAGE,
 } from "../scripts/p1/text-turn-probe.mjs";
 
 test("text-turn probe bounds turns and parses options", () => {
@@ -59,4 +61,12 @@ test("normalization and conversation id extraction are deterministic", () => {
   assert.equal(normalizeText("A\n  B"), "A B");
   assert.equal(extractConversationId("https://chatgpt.com/c/1234?x=1"), "1234");
   assert.equal(extractConversationId("https://chatgpt.com/"), null);
+});
+
+test("text-turn probe fails closed when the isolated profile is not authenticated", () => {
+  assert.throws(
+    () => assertAuthenticatedForTextTurn({ authenticated: false, authSource: null, sessionEndpointStatus: 200 }),
+    new RegExp(TEXT_TURN_UNAUTHENTICATED_MESSAGE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  );
+  assert.doesNotThrow(() => assertAuthenticatedForTextTurn({ authenticated: true, authSource: "ui" }));
 });
