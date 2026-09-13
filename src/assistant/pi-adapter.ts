@@ -1,36 +1,27 @@
-import type { AssistantAdapter, AssistantTask } from "./types.js";
-import { resolveAssistantModel, type ModelCatalogLike } from "./model-catalog.js";
+export {
+  createAssistantAdapter,
+  createRegistryAssistantRunner,
+  describeAssistantHelper,
+  DisabledAssistantAdapter,
+  extractAssistantText,
+  HELPER_COMPRESSION_INSTRUCTION,
+  maybeCompressContext,
+  PiAssistantAdapter,
+  profileRequestOptions,
+} from "../../scripts/p5/pi-adapter.mjs";
+
+export type { AssistantAdapter, AssistantProfile, AssistantTask } from "./types.js";
+export type { ModelCatalogLike } from "./model-catalog.js";
+
+export interface AssistantRegistryLike {
+  getAll(): readonly any[];
+  complete?(model: any, context: { systemPrompt?: string; messages: any[] }, options?: Record<string, unknown>): Promise<any>;
+  hasConfiguredAuth?(model: any): boolean;
+}
 
 export type AssistantRunner = (args: {
   model: any;
   system: string;
   input: string;
-  profile: AssistantTask["profile"];
+  profile: import("./types.js").AssistantProfile;
 }) => Promise<string>;
-
-export class PiAssistantAdapter implements AssistantAdapter {
-  constructor(
-    private readonly registry: ModelCatalogLike,
-    private readonly configuredModel: string,
-    private readonly runner: AssistantRunner,
-  ) {}
-
-  async run(task: AssistantTask): Promise<string> {
-    const resolved = resolveAssistantModel(this.registry, this.configuredModel);
-    if (!resolved) {
-      throw new Error(`Helper model not found in Pi/OpenCodex registry: ${this.configuredModel}`);
-    }
-    return this.runner({
-      model: resolved.raw,
-      system: task.instruction,
-      input: task.input,
-      profile: task.profile,
-    });
-  }
-}
-
-export class DisabledAssistantAdapter implements AssistantAdapter {
-  async run(_task: AssistantTask): Promise<string> {
-    throw new Error("Helper model is disabled.");
-  }
-}

@@ -4,9 +4,10 @@ import { ChatGPTCommandServices } from "./services.js";
 import { PromptController } from "./prompt-controller.js";
 import { loadConfig, saveConfig } from "../config/loader.js";
 import { listModelKeys, resolveAssistantModel } from "../assistant/model-catalog.js";
+import { describeAssistantHelper } from "../assistant/pi-adapter.js";
 import { handleOperationalCommand } from "../../scripts/p4/command-handler.mjs";
 
-const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt login confirm\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt capabilities\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
+const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt login confirm\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt capabilities\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config fallback-model <provider/model|none>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
 
 export function registerChatGPTCommand(pi: ExtensionAPI, services = new ChatGPTCommandServices()) {
   const prompts = new PromptController(pi, services);
@@ -20,7 +21,6 @@ export function registerChatGPTCommand(pi: ExtensionAPI, services = new ChatGPTC
 
         if (command.kind === "status" || command.kind === "login" || command.kind === "logout" || command.kind === "doctor" || command.kind === "ask") {
           const config = command.kind === "status" ? (await loadConfig()) : null;
-          const resolved = config?.assistant.enabled ? resolveAssistantModel(ctx.modelRegistry, config.assistant.model) : null;
           const operational = {
             login: () => services.login(),
             confirmLogin: () => services.confirmLogin(),
@@ -34,7 +34,7 @@ export function registerChatGPTCommand(pi: ExtensionAPI, services = new ChatGPTC
               const { health } = await services.status();
               return {
                 health,
-                helper: config?.assistant.enabled ? resolved?.key ?? `${config.assistant.model} (unresolved)` : "disabled",
+                helper: config ? describeAssistantHelper(config, ctx.modelRegistry) : "disabled",
               };
             },
           };
@@ -78,6 +78,20 @@ export function registerChatGPTCommand(pi: ExtensionAPI, services = new ChatGPTC
             config.assistant.model = command.value;
             await saveConfig(config);
             return ctx.ui.notify(`Helper model set to ${command.value}`, "info");
+          }
+          if (command.action === "fallback-model") {
+            if (!command.value) return ctx.ui.notify("Usage: /chatgpt config fallback-model <provider/model|none>", "warning");
+            if (command.value === "none" || command.value === "off") {
+              config.assistant.fallbackModel = null;
+              await saveConfig(config);
+              return ctx.ui.notify("Helper fallback model cleared", "info");
+            }
+            if (!resolveAssistantModel(ctx.modelRegistry, command.value)) {
+              return ctx.ui.notify(`Model is not present in the Pi/OpenCodex registry: ${command.value}`, "warning");
+            }
+            config.assistant.fallbackModel = command.value;
+            await saveConfig(config);
+            return ctx.ui.notify(`Helper fallback model set to ${command.value}`, "info");
           }
           if (command.action === "assistant") {
             if (!command.value || !["on", "off"].includes(command.value)) return ctx.ui.notify("Usage: /chatgpt config assistant <on|off>", "warning");

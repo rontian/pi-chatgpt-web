@@ -1,3 +1,4 @@
+import { maybeCompressContext } from "../../scripts/p5/pi-adapter.mjs";
 import type { AssistantAdapter } from "../assistant/types.js";
 import type { PiChatGPTWebConfig } from "../config/types.js";
 import { applyCharBudget } from "./budget.js";
@@ -56,19 +57,15 @@ export async function buildSessionSnapshot(args: {
   const budgeted = applyCharBudget(newestFirst, args.config.context.maxChars, (item) => `${item.role}: ${item.text}\n`);
   const selected = [...budgeted.items].reverse();
 
-  let relevantContext = selected.map((item) => `${item.role}: ${item.text}`);
-  let helperUsed = false;
-  if (args.assistant && args.config.assistant.enabled && budgeted.truncated) {
-    const extracted = await args.assistant.run({
-      profile: "normal",
-      instruction: "Compress the supplied Pi session context for another model. Preserve explicit user constraints, current task state, decisions, errors, branch/commit identifiers, and unresolved questions. Return concise plain text only.",
-      input: relevantContext.join("\n\n"),
-    });
-    if (extracted.trim()) {
-      relevantContext = [extracted.trim()];
-      helperUsed = true;
-    }
-  }
+  const compressed = await maybeCompressContext({
+    assistant: args.assistant,
+    enabled: args.config.assistant.enabled,
+    truncated: budgeted.truncated,
+    usedChars: budgeted.usedChars,
+    relevantContext: selected.map((item) => `${item.role}: ${item.text}`),
+  });
+  const relevantContext = compressed.relevantContext;
+  const helperUsed = compressed.helperUsed;
 
   return {
     goal: args.goal,

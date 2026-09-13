@@ -9,7 +9,7 @@ Status values: `DONE` (exit gate passed), `SKELETON` (code exists, gate not prov
 - DONE — P2 NativeChromeTurnDriver + BrowserRuntime + mocked suite + opt-in `npm run p2:live`.
 - DONE — P3 ChatGPT product/conversation runtime (`create`/`resume`/`continue`, mocked multi-turn, replaceable transport).
 - DONE — P4 Pi command integration (`npm run p4:ask` + real `pi -e .` `/chatgpt help|status|ask`).
-- SKELETON — P5 configuration and helper-model catalog/adapter boundary.
+- DONE — P5 configuration and helper-model catalog/adapter (`auto`, fallback, disable, Chinese+code extraction tests).
 - SKELETON — P6 bounded Pi Session context pipeline.
 - SKELETON — P7 multi-round prompt workflow.
 - SKELETON — P8 prompt show/edit/send/retry/inspect UX and persistent prompt cache.

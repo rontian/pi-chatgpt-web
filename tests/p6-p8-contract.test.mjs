@@ -10,6 +10,7 @@ test("P6 context pipeline is bounded and filters session history", async () => {
   assert.match(collector, /recentMessages/);
   assert.match(collector, /includeToolResults/);
   assert.match(collector, /helperUsed/);
+  assert.match(collector, /maybeCompressContext/);
 });
 
 test("P7 prompt workflow is multi-round and envelope-driven", async () => {

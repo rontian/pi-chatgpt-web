@@ -1,5 +1,6 @@
 import { basename } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { createAssistantAdapter } from "../assistant/pi-adapter.js";
 import { loadConfig } from "../config/loader.js";
 import { buildSessionSnapshot } from "../context/collector.js";
 import { PromptWorkflow } from "../workflows/prompt/workflow.js";
@@ -35,7 +36,7 @@ export class PromptController {
       project: basename(ctx.cwd),
       entries,
       config,
-      assistant: null,
+      assistant: createAssistantAdapter(config, ctx.modelRegistry),
     });
     const workflow = new PromptWorkflow(this.services.runtime, { maxRounds: config.prompt.maxRounds });
     const result = await workflow.run({ request, cwd: ctx.cwd, snapshot });
