@@ -10,8 +10,8 @@ test("P2 browser transport is driver-injected and preserves ambiguous-write rule
 });
 
 test("P3 product runtime keeps per-workflow conversation state", async () => {
-  const source = await readFile("src/runtime/chatgpt-runtime.ts", "utf8");
-  assert.match(source, /Map<string, ConversationState>/);
+  const source = await readFile("scripts/p3/conversation-runtime.mjs", "utf8");
+  assert.match(source, /this\.conversations = new Map/);
   assert.match(source, /workflowKey/);
   assert.match(source, /conversationId: request\.conversationId \?\?/);
 });

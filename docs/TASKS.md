@@ -7,7 +7,7 @@ Status values: `DONE` (exit gate passed), `SKELETON` (code exists, gate not prov
 - DONE — P0 Bootstrap / Architecture Freeze.
 - DONE — P1 research probe implementation and workstation evidence.
 - DONE — P2 NativeChromeTurnDriver + BrowserRuntime + mocked suite + opt-in `npm run p2:live`.
-- SKELETON — P3 ChatGPT product/conversation runtime (needs create/resume + non-Pi multi-turn proof).
+- DONE — P3 ChatGPT product/conversation runtime (`create`/`resume`/`continue`, mocked multi-turn, replaceable transport).
 - SKELETON — P4 Pi command integration (`/chatgpt ask` in Pi TUI not proven).
 - SKELETON — P5 configuration and helper-model catalog/adapter boundary.
 - SKELETON — P6 bounded Pi Session context pipeline.
