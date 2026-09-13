@@ -64,6 +64,17 @@ npm run p1:tab
 
 This sends one exact-token turn, closes the ChatGPT tab, reopens `/c/<id>`, and checks that the hashed assistant reply is still visible. It does not send a second turn.
 
+## Expiry and ambiguous write
+
+```bash
+npm run p1:expiry
+npm run p1:ambiguous
+```
+
+`p1:expiry` launches an **empty temporary profile** and expects `authenticated: false` with `errorClass: auth_expired_or_unauthenticated`. It does not log out of the real P1 profile.
+
+`p1:ambiguous` does not send a ChatGPT turn. It records the fail-closed policy: a timeout after a possible accepted write is `ambiguous` and must not be retried automatically.
+
 ## Failure handling
 
 Do not blindly re-run after an uncertain send timeout. If the page may have accepted a turn but local observation failed, treat the result as ambiguous and inspect the conversation before another send.

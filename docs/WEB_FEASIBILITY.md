@@ -80,7 +80,7 @@ The implementation should prefer structured product state over brittle rendered-
 
 ## F. Evidence artifact
 
-At P1 closure create `docs/research/P1_WEB_FEASIBILITY_REPORT.md` containing:
+The current research report is `docs/research/P1_WEB_FEASIBILITY_REPORT.md`. It records observed lifecycle and a research go / production-driver no-go. Remaining production freeze items:
 
 - tested browser/runtime versions;
 - observed lifecycle;

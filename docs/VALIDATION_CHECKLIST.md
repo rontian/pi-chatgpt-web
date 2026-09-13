@@ -32,7 +32,7 @@ export PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890
 - [ ] browser profile is isolated from normal Chrome
 - [ ] default network is used unless isolated Chrome cannot reach ChatGPT
 - [ ] optional `PI_CHATGPT_WEB_PROXY` override works when required
-- [ ] expired login produces a controlled error
+- [x] expired/unauthenticated login produces a controlled error (`npm run p1:expiry`, empty temp profile)
 - [ ] no cookies, access tokens, raw session payloads, email addresses, or account identifiers appear in probe output
 - [ ] native Chrome is launched without `--no-sandbox` / `--disable-web-security`
 
@@ -52,7 +52,7 @@ npm run p1:tab
 - [x] `npm run p1:turn:five`
 - [x] text-turn probe reports sanitized authentication evidence before sending
 - [x] tab close/recreate test (`npm run p1:tab`)
-- [ ] uncertain/timeout write does not blind retry
+- [x] uncertain/timeout write does not blind retry (`npm run p1:ambiguous`)
 - [x] canonical research readback approach documented in `docs/research/P1_READBACK_DECISION.md`
 
 ## D. Pi workflows

@@ -1,7 +1,7 @@
 # P1 Task Snapshot
 
 Evidence date: 2026-09-12  
-HEAD at evidence collection: `198ae22`
+HEAD at evidence collection: `0950e21` plus this round
 
 ## Implementation
 
@@ -25,8 +25,9 @@ HEAD at evidence collection: `198ae22`
 - Canonical readback decision for research: DONE in `docs/research/P1_READBACK_DECISION.md`.
 - Production completion detection: TODO.
 - Tab recreation real-account evidence: PASS (`npm run p1:tab`, same conversation URL, restored hashed assistant reply matched).
-- Session expiry behavior: TODO.
-- Timeout / ambiguous-write experiment: TODO.
-- Feasibility report go/no-go: TODO until the remaining matrix is recorded.
+- Session expiry/unauthenticated controlled error: PASS (`npm run p1:expiry`, empty temp profile, `authenticated: false`, `errorClass: auth_expired_or_unauthenticated`, session endpoint 200 not treated as logged in).
+- Timeout / ambiguous-write experiment: PASS (`npm run p1:ambiguous`, `status: ambiguous`, `sentSecondTurn: false`).
+- Production completion detection: TODO.
+- Feasibility report: drafted in `docs/research/P1_WEB_FEASIBILITY_REPORT.md`; production driver still no-go.
 
 P1 implementation and remaining real-account evidence stay separate from P2 driver wiring.

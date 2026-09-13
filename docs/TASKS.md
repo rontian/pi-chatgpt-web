@@ -27,7 +27,8 @@ The codebase is intentionally `0.1.0-alpha.0` until the following are run in the
 - DONE — Real text turn, continuation and five-turn probe (workstation 2026-09-12).
 - DONE — P1 research readback decision documented; production completion detection still deferred.
 - DONE — Tab recreation probe (`npm run p1:tab`, workstation 2026-09-12).
-- DEFERRED_VALIDATION — Session expiry and ambiguous-write experiments.
+- DONE — Session expiry/unauthenticated controlled error (`npm run p1:expiry`).
+- DONE — Ambiguous-write no-blind-retry policy probe (`npm run p1:ambiguous`).
 - DEFERRED_VALIDATION — Wire the final real BrowserTurnDriver after P1 evidence.
 - DEFERRED_VALIDATION — `/chatgpt ask` and multi-round `/chatgpt prompt` in Pi TUI.
 - DEFERRED_VALIDATION — Helper-model invocation and large-session compression.
