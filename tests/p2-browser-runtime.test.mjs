@@ -25,6 +25,7 @@ function helpers({
     countByCandidates: async () => ({ selector: '[data-message-author-role="assistant"]', count: replyIndex }),
     latestText: async () => replies[Math.max(0, replyIndex - 1)] ?? "",
     latestMessageId: async () => (replyIndex ? `msg-${replyIndex}` : undefined),
+    inspectGeneratingControls: async () => [],
     sendViaUi: sendImpl ?? (async () => {
       sent += 1;
       replyIndex += 1;
@@ -102,7 +103,15 @@ test("unauthenticated executeTextTurn fails closed without sending", async () =>
 });
 
 test("timeout after send is ambiguous and never retried automatically", async () => {
-  const timeout = Object.assign(new Error("Timed out waiting for a stable assistant response."), { code: "TURN_TIMEOUT" });
+  const timeout = Object.assign(new Error("Timed out waiting for a stable assistant response."), {
+    code: "TURN_TIMEOUT",
+    snapshot: {
+      text: "OK",
+      newTurn: true,
+      stableMs: 2_000,
+      generatingEvidence: { generating: true, strongCount: 1, weakCount: 0, baselineCount: 0 },
+    },
+  });
   const h = helpers({
     waitImpl: async () => {
       throw timeout;
@@ -112,6 +121,7 @@ test("timeout after send is ambiguous and never retried automatically", async ()
   assert.equal(result.status, "ambiguous");
   assert.equal(h.sent(), 1);
   assert.equal(result.provenance.browserOwnedWrite, true);
+  assert.equal(result.provenance.reconciledReadback, false);
   assert.equal(mayAutomaticallyRetry(result.status), false);
   assert.throws(() => assertRetrySafe(result.status), /reconciled before retry/);
 });

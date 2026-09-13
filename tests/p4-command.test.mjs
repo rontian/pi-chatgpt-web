@@ -57,6 +57,29 @@ test("P4 ask renders completed text and actionable failures", async () => {
   assert.match(notes.at(-1).message, /did not complete: failed/);
   assert.match(notes.at(-1).message, /not authenticated/);
   assert.equal(notes.at(-1).level, "warning");
+
+  const reconciledNotes = [];
+  await handleOperationalCommand(
+    parseChatGPTCommand("ask 只回复 OK"),
+    {
+      ask: async () => ({
+        conversationId: "c1",
+        status: "completed",
+        text: "OK",
+        observations: [{ type: "readback", status: "reconciled" }],
+        provenance: {
+          transport: "browser-owned",
+          browserOwnedWrite: true,
+          reconciledReadback: true,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+        },
+      }),
+    },
+    (message, level) => reconciledNotes.push({ message, level }),
+  );
+  assert.equal(reconciledNotes.at(-1).message, "OK");
+  assert.equal(reconciledNotes.at(-1).level, "info");
 });
 
 test("P4 login/status/doctor route through services", async () => {

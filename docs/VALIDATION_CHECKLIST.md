@@ -7,9 +7,9 @@ This checklist is intentionally deferred until the repository is pulled to the u
 - [ ] `npm install`
 - [ ] `npm run validate`
 - [ ] `npm run pack:check`
-- [ ] `pi -e .` loads the extension
-- [ ] `/chatgpt help`
-- [ ] `/chatgpt status`
+- [x] `pi -e .` loads the extension (workstation 2026-09-13)
+- [x] `/chatgpt help` (workstation 2026-09-13)
+- [x] `/chatgpt status` (`transport: ready`, authenticated isolated Chrome session)
 - [ ] `/chatgpt doctor`
 - [ ] `/chatgpt config models`
 - [x] `npm run p4:ask` (command-path ask, not Pi TUI)
@@ -62,7 +62,7 @@ After NativeChromeTurnDriver is wired:
 
 - [x] `npm run p2:live` (opt-in, isolated Chrome may open; workstation 2026-09-12)
 
-- [ ] `/chatgpt ask 只回复 OK`
+- [x] `/chatgpt ask 只回复 OK` (Pi TUI, unique token `P4FIX-4827` then two identical OK turns, workstation 2026-09-13)
 - [ ] `/chatgpt prompt <real project request>`
 - [ ] generated prompt appears in Pi editor
 - [ ] `/chatgpt prompt inspect`

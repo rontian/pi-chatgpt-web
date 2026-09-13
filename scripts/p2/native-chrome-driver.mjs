@@ -45,6 +45,7 @@ async function loadTurnHelpers() {
     countByCandidates: page.countByCandidates,
     latestText: page.latestText,
     latestMessageId: page.latestMessageId,
+    inspectGeneratingControls: page.inspectGeneratingControls,
     sendViaUi: page.sendViaUi,
     waitForAssistant: page.waitForAssistant,
     extractConversationId: page.extractConversationId,
