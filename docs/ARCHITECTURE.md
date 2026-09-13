@@ -135,10 +135,11 @@ No private payload will be implemented from documentation guesses alone.
 The browser runtime owns:
 
 - persistent profile location;
-- interactive login bootstrap;
+- interactive login bootstrap without CDP;
+- CDP attach after login confirm / for already-authenticated profiles;
 - authenticated-state health checks;
 - reusable product tab/session;
-- explicit logout/reset;
+- explicit logout/reset of the isolated profile cookies;
 - browser lifecycle recovery.
 
 Secrets/cookies must remain in user-local state, never repository/project configuration.

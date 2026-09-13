@@ -13,6 +13,7 @@ import {
   getOrOpenChatgptPage,
   launchNativeChromeSession,
 } from "./native-chrome-host.mjs";
+import { conversationUrl } from "./page-session.mjs";
 import {
   ASSISTANT_SELECTORS,
   assertAuthenticatedForTextTurn,
@@ -24,6 +25,8 @@ import {
   summarizeTurn,
   waitForAssistant,
 } from "./text-turn-probe.mjs";
+
+export { conversationUrl } from "./page-session.mjs";
 
 export function parseArgs(argv, env = process.env) {
   const { args, proxy } = extractProxyOption(argv, env);
@@ -51,11 +54,6 @@ export function parseArgs(argv, env = process.env) {
     throw new Error("--timeout-ms must be an integer >= 5000.");
   }
   return result;
-}
-
-export function conversationUrl(conversationId) {
-  if (!conversationId) throw new Error("conversationId is required to reopen a ChatGPT tab.");
-  return `https://chatgpt.com/c/${conversationId}`;
 }
 
 function printHelp() {

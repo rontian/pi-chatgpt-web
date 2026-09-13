@@ -65,9 +65,10 @@ test("normalization and conversation id extraction are deterministic", () => {
 });
 
 test("assistant wait accepts either a new bubble or changed latest text", () => {
-  const source = readFileSync(new URL("../scripts/p1/text-turn-probe.mjs", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../scripts/p1/page-session.mjs", import.meta.url), "utf8");
   assert.match(source, /countAdvanced \|\| textAdvanced/);
-  assert.match(source, /waitForAssistant\(page, before\.count, options\.timeoutMs, beforeText\)/);
+  const probe = readFileSync(new URL("../scripts/p1/text-turn-probe.mjs", import.meta.url), "utf8");
+  assert.match(probe, /waitForAssistant\(page, before\.count, options\.timeoutMs, beforeText\)/);
 });
 
 test("text-turn probe fails closed when the isolated profile is not authenticated", () => {

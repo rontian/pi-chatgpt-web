@@ -57,7 +57,9 @@ npm run p1:tab
 
 ## D. Pi workflows
 
-After the real BrowserTurnDriver is wired:
+After NativeChromeTurnDriver is wired:
+
+- [x] `npm run p2:live` (opt-in, isolated Chrome may open; workstation 2026-09-12)
 
 - [ ] `/chatgpt ask 只回复 OK`
 - [ ] `/chatgpt prompt <real project request>`

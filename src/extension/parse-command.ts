@@ -1,7 +1,7 @@
 export type ParsedChatGPTCommand =
   | { kind: "help"; tokens: string[] }
   | { kind: "status"; tokens: string[] }
-  | { kind: "login"; tokens: string[] }
+  | { kind: "login"; tokens: string[]; action: "start" | "confirm" }
   | { kind: "logout"; tokens: string[] }
   | { kind: "doctor"; tokens: string[] }
   | { kind: "capabilities"; tokens: string[] }
@@ -19,8 +19,12 @@ export function parseChatGPTCommand(input: string): ParsedChatGPTCommand {
   const tokens = tokenizeCommand(trimmed);
   if (tokens.length === 0 || tokens[0] === "help") return { kind: "help", tokens };
   const head = tokens[0];
-  if (head === "status" || head === "login" || head === "logout" || head === "doctor" || head === "capabilities") {
+  if (head === "status" || head === "logout" || head === "doctor" || head === "capabilities") {
     return { kind: head, tokens } as ParsedChatGPTCommand;
+  }
+  if (head === "login") {
+    const action = tokens[1] === "confirm" ? "confirm" : "start";
+    return { kind: "login", tokens, action };
   }
   if (head === "ask") return { kind: "ask", tokens, text: trimmed.slice(3).trim() };
   if (head === "prompt") {

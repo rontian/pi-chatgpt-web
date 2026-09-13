@@ -2,7 +2,7 @@
 
 Date: 2026-09-12  
 Repository HEAD at this report: local commit after expiry/ambiguous probes  
-Decision: **P1 research path is feasible. Do not wire `BrowserTurnDriver` yet.**
+Decision: **P1 research path is feasible. P2 wired NativeChromeTurnDriver with DOM-stable research readback.**
 
 ## Runtime
 
@@ -24,7 +24,8 @@ Decision: **P1 research path is feasible. Do not wire `BrowserTurnDriver` yet.**
 | Tab close/recreate | PASS |
 | Unauthenticated/empty-profile auth | PASS (`p1:expiry`, controlled `auth_expired_or_unauthenticated`) |
 | Ambiguous write no-blind-retry | PASS (`p1:ambiguous`, policy only; no second send) |
-| Production driver wired | NO |
+| Production driver wired | YES (`NativeChromeTurnDriver`) |
+| Opt-in live driver `p2:live` | PASS (`status: completed`) |
 
 ## Transport strategy frozen for remaining P1/P2 research
 
@@ -44,5 +45,5 @@ Decision: **P1 research path is feasible. Do not wire `BrowserTurnDriver` yet.**
 
 ## Go / no-go
 
-- **Go** for continuing P1 evidence packaging and later P2 driver design around native Chrome + CDP.
-- **No-go** for implementing `BrowserOwnedTransport.sendTurn()` in this commit. Production completion detection remains open.
+- **Go** for P2 native Chrome + CDP transport.
+- Production completion detection remains DOM-stable research readback until a structured conversation API is observed.

@@ -2,7 +2,7 @@
 
 ## `/chatgpt status` says transport not ready
 
-Expected before local P1 validation and real BrowserTurnDriver wiring. Run the repository's P1 probes first and keep the browser profile isolated from your daily Chrome profile.
+Usually the isolated profile is not authenticated, Chrome is missing, or `/chatgpt login` is waiting for `/chatgpt login confirm`. Login still happens in ordinary Chrome without CDP. Daily Chrome is not the P1/P2 profile.
 
 ## Helper model is unresolved
 
@@ -29,7 +29,7 @@ Inspect:
 /chatgpt capabilities
 ```
 
-Before real browser-driver wiring, prompt/ask workflows are expected to fail closed rather than return fake ChatGPT output.
+If the isolated profile is not authenticated, prompt/ask fail closed rather than return fake ChatGPT output.
 
 ## Prompt disappeared after reload
 
@@ -44,11 +44,12 @@ If there is no completed cache, generate a new prompt.
 
 ## Browser/login problems
 
-Use the P1 runbook and sanitized probes:
+Use `/chatgpt login` then `/chatgpt login confirm`, or the P1 runbook:
 
 ```bash
 npm run p1:browser
 npm run p1:browser:check
+npm run p2:live
 ```
 
 Do not paste cookies, auth payloads, browser-profile files, or authorization headers into issues.

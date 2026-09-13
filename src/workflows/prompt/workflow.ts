@@ -9,10 +9,12 @@ export interface PromptWorkflowOptions {
 
 export class PromptWorkflow implements ChatGPTWorkflow {
   readonly name = "prompt";
+  private readonly runtime: ChatGPTProductRuntime;
   private readonly maxRounds: number;
   private readonly resolver: ContextRequestResolver | null;
 
-  constructor(private readonly runtime: ChatGPTProductRuntime, options: PromptWorkflowOptions = {}) {
+  constructor(runtime: ChatGPTProductRuntime, options: PromptWorkflowOptions = {}) {
+    this.runtime = runtime;
     this.maxRounds = options.maxRounds ?? 8;
     this.resolver = options.resolver ?? null;
   }

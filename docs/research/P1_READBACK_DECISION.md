@@ -1,6 +1,6 @@
 # P1 Readback Decision
 
-Status: **ACCEPTED for P1 research; not a production driver freeze**  
+Status: **ACCEPTED for P1 research and P2 production text turns until a structured API is observed**
 Date: 2026-09-12
 
 ## Decision
@@ -38,9 +38,8 @@ Timeouts are fail-closed. A timeout after a possible accepted write is **ambiguo
 
 ## Explicitly not decided
 
-- production message-tree / parent message IDs;
+- production message-tree / parent message IDs beyond optional `data-message-id`;
 - streaming vs polling for Pro `stream_handoff`;
-- Sentinel/Turnstile token harvest;
-- wiring `BrowserTurnDriver`.
+- Sentinel/Turnstile token harvest.
 
-Those remain P2+ work after tab recreation, expiry, and ambiguous-write evidence.
+P2 production text turns still use this DOM-stable research readback until a structured conversation API is independently observed. Timeouts after a possible accepted write remain `ambiguous`.

@@ -17,10 +17,13 @@ export class PromptController {
   private last: PromptState | null = null;
   private restored = false;
 
-  constructor(
-    private readonly pi: ExtensionAPI,
-    private readonly services: ChatGPTCommandServices,
-  ) {}
+  private readonly pi: ExtensionAPI;
+  private readonly services: ChatGPTCommandServices;
+
+  constructor(pi: ExtensionAPI, services: ChatGPTCommandServices) {
+    this.pi = pi;
+    this.services = services;
+  }
 
   async run(request: string, ctx: ExtensionContext) {
     if (!request.trim()) throw new Error("Usage: /chatgpt prompt <request>");

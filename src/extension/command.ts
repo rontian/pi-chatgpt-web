@@ -5,7 +5,7 @@ import { PromptController } from "./prompt-controller.js";
 import { loadConfig, saveConfig } from "../config/loader.js";
 import { listModelKeys, resolveAssistantModel } from "../assistant/model-catalog.js";
 
-const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt capabilities\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
+const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt login confirm\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt capabilities\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
 
 export function registerChatGPTCommand(pi: ExtensionAPI) {
   const services = new ChatGPTCommandServices();
@@ -26,7 +26,6 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
             `transport: ${health.ok ? "ready" : "not ready"}`,
             `detail: ${health.detail ?? "-"}`,
             `helper: ${config.assistant.enabled ? resolved?.key ?? `${config.assistant.model} (unresolved)` : "disabled"}`,
-            "real browser validation: deferred",
           ].join("\n"), health.ok ? "info" : "warning");
         }
 
@@ -35,11 +34,13 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
         }
 
         if (command.kind === "login") {
-          return ctx.ui.notify("Run the local P1 login probe (`npm run p1:browser`) from the package checkout. Production browser-driver wiring remains gated by local validation.", "info");
+          const result = command.action === "confirm" ? await services.confirmLogin() : await services.login();
+          return ctx.ui.notify(result.detail, result.ok ? "info" : "warning");
         }
 
         if (command.kind === "logout") {
-          return ctx.ui.notify("Automatic browser-profile reset remains gated by local validation. See docs/research/P1_BROWSER_PROBE_RUNBOOK.md.", "warning");
+          const result = await services.logout();
+          return ctx.ui.notify(result.detail, result.ok ? "info" : "warning");
         }
 
         if (command.kind === "doctor") {

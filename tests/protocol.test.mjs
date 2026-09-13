@@ -12,5 +12,5 @@ test("browser transport requires an explicit validated driver instead of faking 
   const source = await readFile("src/transport/browser-owned.ts", "utf8");
   assert.match(source, /BrowserTurnDriver/);
   assert.match(source, /UnconfiguredBrowserTurnDriver/);
-  assert.match(source, /real browser driver requires local P1 validation/i);
+  assert.match(source, /browser driver is unconfigured/i);
 });

@@ -15,7 +15,7 @@ Use ChatGPT Web from inside Pi as a specialized analysis and content-generation 
 
 Planned behaviors:
 
-- `/chatgpt login` opens/attaches an interactive authenticated browser profile.
+- `/chatgpt login` opens isolated ordinary Chrome without CDP; `/chatgpt login confirm` closes that window so later commands can attach over loopback CDP.
 - authentication survives process restart when the ChatGPT account/session permits it;
 - `/chatgpt logout` clears local product authentication state intentionally;
 - `/chatgpt doctor` distinguishes browser, login, product, transport, and workflow failures.

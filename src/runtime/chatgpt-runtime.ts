@@ -13,8 +13,11 @@ export interface ConversationState {
 export class ChatGPTProductRuntime {
   private readonly conversations = new Map<string, ConversationState>();
   readonly capabilities = new CapabilityRegistry();
+  private readonly transport: ProductTransport;
 
-  constructor(private readonly transport: ProductTransport) {}
+  constructor(transport: ProductTransport) {
+    this.transport = transport;
+  }
 
   health() {
     return this.transport.health();

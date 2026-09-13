@@ -4,11 +4,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import process from "node:process";
-import {
-  AUTH_COMPOSER_SELECTORS,
-  extractProxyOption,
-  probeAuthentication,
-} from "./browser-probe-helpers.mjs";
+import { extractProxyOption, probeAuthentication } from "./browser-probe-helpers.mjs";
 import {
   CHATGPT_URL,
   DEFAULT_PROFILE_DIR,
@@ -17,31 +13,34 @@ import {
   getOrOpenChatgptPage,
   launchNativeChromeSession,
 } from "./native-chrome-host.mjs";
+import {
+  ASSISTANT_SELECTORS,
+  COMPOSER_SELECTORS,
+  SEND_SELECTORS,
+  STOP_SELECTORS,
+  USER_SELECTORS,
+  countByCandidates,
+  extractConversationId,
+  latestText,
+  normalizeText,
+  sendViaUi,
+  waitForAssistant,
+} from "./page-session.mjs";
 
-export const COMPOSER_SELECTORS = AUTH_COMPOSER_SELECTORS;
-
-export const SEND_SELECTORS = [
-  '[data-testid="send-button"]',
-  "#composer-submit-button",
-  'button[aria-label="Send prompt"]',
-];
-
-export const ASSISTANT_SELECTORS = [
-  '[data-message-author-role="assistant"]',
-  '[data-role="assistant"]',
-  '[data-message-author="assistant"]',
-];
-
-export const USER_SELECTORS = [
-  '[data-message-author-role="user"]',
-  '[data-role="user"]',
-  '[data-message-author="user"]',
-];
-
-export const STOP_SELECTORS = [
-  '[data-testid="stop-button"]',
-  'button[aria-label*="Stop"]',
-];
+export {
+  ASSISTANT_SELECTORS,
+  COMPOSER_SELECTORS,
+  SEND_SELECTORS,
+  STOP_SELECTORS,
+  USER_SELECTORS,
+  countByCandidates,
+  extractConversationId,
+  firstVisible,
+  latestText,
+  normalizeText,
+  sendViaUi,
+  waitForAssistant,
+} from "./page-session.mjs";
 
 export function parseArgs(argv, env = process.env) {
   const { args, proxy } = extractProxyOption(argv, env);
@@ -78,9 +77,7 @@ export function parseArgs(argv, env = process.env) {
   return result;
 }
 
-export function normalizeText(value) {
-  return String(value ?? "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
-}
+
 
 export function buildProbeToken(seedHex, turn = 1) {
   if (!/^[a-f0-9]{8,64}$/i.test(seedHex)) throw new Error("invalid probe seed");
@@ -122,105 +119,7 @@ export function assertAuthenticatedForTextTurn(auth) {
   if (!auth?.authenticated) throw new Error(TEXT_TURN_UNAUTHENTICATED_MESSAGE);
 }
 
-export function extractConversationId(url) {
-  try {
-    const parsed = new URL(url);
-    const match = parsed.pathname.match(/^\/c\/([^/?#]+)/);
-    return match?.[1] ?? null;
-  } catch {
-    return null;
-  }
-}
 
-export async function firstVisible(page, selectors) {
-  for (const selector of selectors) {
-    const locator = page.locator(selector).first();
-    if ((await locator.count()) > 0 && (await locator.isVisible().catch(() => false))) {
-      return { selector, locator };
-    }
-  }
-  return null;
-}
-
-export async function countByCandidates(page, selectors) {
-  let best = { selector: null, count: 0 };
-  for (const selector of selectors) {
-    const count = await page.locator(selector).count();
-    if (count > best.count) best = { selector, count };
-  }
-  return best;
-}
-
-export async function latestText(page, selectors) {
-  for (const selector of selectors) {
-    const locator = page.locator(selector);
-    const count = await locator.count();
-    if (count > 0) {
-      const node = locator.nth(count - 1);
-      if (await node.isVisible().catch(() => false)) {
-        return normalizeText(await node.innerText().catch(() => ""));
-      }
-    }
-  }
-  return "";
-}
-
-async function anyVisible(page, selectors) {
-  for (const selector of selectors) {
-    const locator = page.locator(selector).first();
-    if ((await locator.count()) > 0 && (await locator.isVisible().catch(() => false))) return true;
-  }
-  return false;
-}
-
-export async function sendViaUi(page, prompt) {
-  const composer = await firstVisible(page, COMPOSER_SELECTORS);
-  if (!composer) throw new Error("Could not find a visible ChatGPT composer. UI selectors may have changed.");
-
-  await composer.locator.fill(prompt);
-  const send = await firstVisible(page, SEND_SELECTORS);
-  if (send) await send.locator.click();
-  else await composer.locator.press("Enter");
-
-  return { composerSelector: composer.selector, sendSelector: send?.selector ?? "<Enter>" };
-}
-
-export async function waitForAssistant(page, beforeCount, timeoutMs, beforeText = "") {
-  const startedAt = Date.now();
-  let lastText = "";
-  let stableSince = 0;
-  let observedSelector = null;
-  const normalizedBefore = normalizeText(beforeText);
-
-  while (Date.now() - startedAt < timeoutMs) {
-    const current = await countByCandidates(page, ASSISTANT_SELECTORS);
-    const text = await latestText(page, ASSISTANT_SELECTORS);
-    const countAdvanced = current.count > beforeCount;
-    const textAdvanced = Boolean(text) && text !== normalizedBefore;
-    if (countAdvanced || textAdvanced) {
-      observedSelector = current.selector ?? observedSelector;
-      if (text && text === lastText) {
-        if (!stableSince) stableSince = Date.now();
-      } else {
-        lastText = text;
-        stableSince = text ? Date.now() : 0;
-      }
-
-      const generating = await anyVisible(page, STOP_SELECTORS);
-      if (text && !generating && stableSince && Date.now() - stableSince >= 2_000) {
-        return { text, assistantSelector: observedSelector };
-      }
-    }
-    await page.waitForTimeout(250);
-  }
-
-  const final = await countByCandidates(page, ASSISTANT_SELECTORS);
-  const finalText = await latestText(page, ASSISTANT_SELECTORS);
-  const generating = await anyVisible(page, STOP_SELECTORS);
-  throw new Error(
-    `Timed out waiting for a stable assistant response. beforeCount=${beforeCount} afterCount=${final.count} generating=${generating} latestLength=${finalText.length} changed=${finalText !== normalizedBefore}`
-  );
-}
 
 function printHelp() {
   console.log(`P1 ChatGPT text-turn UI probe\n\nUsage:\n  npm run p1:turn\n  npm run p1:turn:continue\n  npm run p1:turn:five\n\nOptions:\n  --turns <1..5>\n  --channel <name>\n  --profile-dir <path>\n  --proxy <url>\n  --headless\n  --timeout-ms <ms>\n  --json\n  --keep-open\n\nEnvironment:\n  PI_CHATGPT_WEB_BROWSER_CHANNEL\n  PI_CHATGPT_WEB_BROWSER_PROFILE\n  PI_CHATGPT_WEB_PROXY\n  PI_CHATGPT_WEB_CHROME_EXECUTABLE\n`);
