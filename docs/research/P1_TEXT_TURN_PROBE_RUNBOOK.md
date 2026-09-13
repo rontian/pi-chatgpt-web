@@ -1,6 +1,6 @@
 # P1 Text Turn Probe Runbook
 
-Status: **probe implementation ready; real-account evidence still required**.
+Status: **real-account 1/2/5-turn evidence collected; tab recreation is a separate probe**.
 
 This probe uses the authenticated ChatGPT page UI to perform a research-only text turn. It deliberately does **not** implement the production `BrowserOwnedTransport` and it does **not** decide the final canonical readback plane.
 
@@ -47,7 +47,7 @@ This exercises five sequential page-owned sends in one conversation. Turn 2 is t
 
 The current probe reads the rendered assistant message and uses response stability plus absence of a visible stop control to decide when the research response appears complete.
 
-This is **not** the P1 canonical readback decision. P1 must separately determine whether structured conversation/message/status state is available and preferable.
+Research completion uses DOM stability. The accepted P1 research decision is in `docs/research/P1_READBACK_DECISION.md`. Production transport still must not freeze on rendered text alone.
 
 A mature reference implementation (`kymuco/chatgpt-web-adapter`) similarly separates browser-owned product mutation from canonical conversation readback; this repository uses that only as architectural comparison, not as a private-protocol source of truth.
 
@@ -55,6 +55,14 @@ References:
 
 - https://github.com/kymuco/chatgpt-web-adapter
 - https://github.com/owenkleinmaier/glassbox/blob/main/SELECTORS.md
+
+## Tab recreation
+
+```bash
+npm run p1:tab
+```
+
+This sends one exact-token turn, closes the ChatGPT tab, reopens `/c/<id>`, and checks that the hashed assistant reply is still visible. It does not send a second turn.
 
 ## Failure handling
 

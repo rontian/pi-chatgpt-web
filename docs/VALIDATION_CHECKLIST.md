@@ -44,15 +44,16 @@ Use the same optional `PI_CHATGPT_WEB_PROXY` value, when required, for all text-
 npm run p1:turn
 npm run p1:turn:continue
 npm run p1:turn:five
+npm run p1:tab
 ```
 
-- [ ] `npm run p1:turn`
-- [ ] `npm run p1:turn:continue`
-- [ ] `npm run p1:turn:five`
-- [ ] text-turn probe reports sanitized authentication evidence before sending
-- [ ] tab close/recreate test
+- [x] `npm run p1:turn`
+- [x] `npm run p1:turn:continue`
+- [x] `npm run p1:turn:five`
+- [x] text-turn probe reports sanitized authentication evidence before sending
+- [x] tab close/recreate test (`npm run p1:tab`)
 - [ ] uncertain/timeout write does not blind retry
-- [ ] canonical readback approach is selected and documented
+- [x] canonical research readback approach documented in `docs/research/P1_READBACK_DECISION.md`
 
 ## D. Pi workflows
 

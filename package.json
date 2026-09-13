@@ -48,7 +48,8 @@
     "p1:browser:check": "node ./scripts/p1/browser-probe.mjs --check-only --json",
     "p1:turn": "node ./scripts/p1/text-turn-probe.mjs --turns 1 --json",
     "p1:turn:continue": "node ./scripts/p1/text-turn-probe.mjs --turns 2 --json",
-    "p1:turn:five": "node ./scripts/p1/text-turn-probe.mjs --turns 5 --json"
+    "p1:turn:five": "node ./scripts/p1/text-turn-probe.mjs --turns 5 --json",
+    "p1:tab": "node ./scripts/p1/tab-recreate-probe.mjs --json"
   },
   "publishConfig": {
     "access": "public"

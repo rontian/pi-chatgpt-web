@@ -19,6 +19,9 @@ const required = [
   "scripts/p1/browser-probe-helpers.mjs",
   "scripts/p1/native-chrome-host.mjs",
   "scripts/p1/text-turn-probe.mjs",
+  "scripts/p1/tab-recreate-probe.mjs",
+  "docs/research/P1_TASK_SNAPSHOT.md",
+  "docs/research/P1_READBACK_DECISION.md",
   "docs/ARCHITECTURE.md",
   "docs/FEATURES.md",
   "docs/DEVELOPMENT_PLAN.md",
@@ -46,7 +49,7 @@ if (pkg.peerDependencies?.["@earendil-works/pi-coding-agent"] !== "*") {
 if (pkg.dependencies?.["playwright-core"] !== "1.63.0") {
   throw new Error("P1 browser dependency must stay pinned to playwright-core 1.63.0");
 }
-for (const script of ["validate", "pack:check", "p1:turn", "p1:turn:continue", "p1:turn:five"]) {
+for (const script of ["validate", "pack:check", "p1:turn", "p1:turn:continue", "p1:turn:five", "p1:tab"]) {
   if (!pkg.scripts?.[script]) throw new Error(`missing ${script} script`);
 }
 if (pkg.publishConfig?.access !== "public") throw new Error("public publishConfig expected");

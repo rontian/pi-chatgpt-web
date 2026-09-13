@@ -23,9 +23,11 @@ Status values: `DONE`, `DEFERRED_VALIDATION`.
 The codebase is intentionally `0.1.0-alpha.0` until the following are run in the target environment:
 
 - DEFERRED_VALIDATION — Install/reload as a real Pi package.
-- DEFERRED_VALIDATION — Fresh ChatGPT browser login and restart reuse.
-- DEFERRED_VALIDATION — Real text turn, continuation and five-turn probe.
-- DEFERRED_VALIDATION — Select/freeze canonical readback and production completion detection.
+- DONE — Fresh ChatGPT browser login and restart reuse (workstation 2026-09-12).
+- DONE — Real text turn, continuation and five-turn probe (workstation 2026-09-12).
+- DONE — P1 research readback decision documented; production completion detection still deferred.
+- DONE — Tab recreation probe (`npm run p1:tab`, workstation 2026-09-12).
+- DEFERRED_VALIDATION — Session expiry and ambiguous-write experiments.
 - DEFERRED_VALIDATION — Wire the final real BrowserTurnDriver after P1 evidence.
 - DEFERRED_VALIDATION — `/chatgpt ask` and multi-round `/chatgpt prompt` in Pi TUI.
 - DEFERRED_VALIDATION — Helper-model invocation and large-session compression.

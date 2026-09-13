@@ -4,12 +4,13 @@ P1 must answer these questions with observed evidence before `BrowserOwnedTransp
 
 ## A. Browser choice
 
-Selected for P1 research on 2026-09-12:
+Selected for P1 research on 2026-09-12, updated the same day:
 
 ```text
-playwright-core@1.63.0
-+ branded Chrome channel
-+ isolated persistent profile
+native Google Chrome
++ isolated profile
++ loopback CDP
++ playwright-core@1.63.0 connectOverCDP client
 ```
 
 Decision rationale and constraints are recorded in `docs/research/P1_BROWSER_AUTOMATION_DECISION.md`.

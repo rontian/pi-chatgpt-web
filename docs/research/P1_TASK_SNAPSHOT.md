@@ -1,14 +1,32 @@
-# P1 Task Snapshot — Text Turn Probe
+# P1 Task Snapshot
 
-Current P1 implementation progress after this commit:
+Evidence date: 2026-09-12  
+HEAD at evidence collection: `198ae22`
 
-- Browser automation selection: DONE.
-- Persistent-profile auth probe implementation: DONE; real-account evidence pending.
-- Research-only UI text-turn probe implementation: DONE; real-account evidence pending.
-- Canonical readback decision: TODO.
+## Implementation
+
+- Native Chrome host + loopback CDP: DONE.
+- Isolated profile auth probe: DONE.
+- Research-only UI text-turn probe: DONE.
+- Tab recreation probe: DONE.
+- Production `BrowserTurnDriver`: not wired.
+
+## Real-account evidence
+
+- Fresh interactive login in ordinary Chrome without CDP: PASS.
+- `npm run p1:browser:check` reuse: PASS (`authenticated: true`, `authSource: session+ui`, `sessionEndpointStatus: 200`).
+- `npm run p1:turn`: PASS, exact match.
+- `npm run p1:turn:continue`: PASS, 2/2 exact match, same conversation.
+- `npm run p1:turn:five`: PASS, 5/5 exact match, same conversation.
+- Network: explicit `PI_CHATGPT_WEB_PROXY=http://127.0.0.1:7890` was used because isolated Chrome needed the workstation HTTP proxy. Default docs still treat that override as optional.
+
+## Remaining P1 gates
+
+- Canonical readback decision for research: DONE in `docs/research/P1_READBACK_DECISION.md`.
 - Production completion detection: TODO.
-- Same-conversation continuation evidence: TODO.
-- Five-turn sequential evidence: TODO.
-- Tab recreation / expiry / ambiguous-write reconciliation: TODO.
+- Tab recreation real-account evidence: PASS (`npm run p1:tab`, same conversation URL, restored hashed assistant reply matched).
+- Session expiry behavior: TODO.
+- Timeout / ambiguous-write experiment: TODO.
+- Feasibility report go/no-go: TODO until the remaining matrix is recorded.
 
-This snapshot exists because P1 implementation work and P1 real-account evidence are intentionally tracked separately.
+P1 implementation and remaining real-account evidence stay separate from P2 driver wiring.

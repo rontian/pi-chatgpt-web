@@ -132,7 +132,7 @@ export function extractConversationId(url) {
   }
 }
 
-async function firstVisible(page, selectors) {
+export async function firstVisible(page, selectors) {
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
     if ((await locator.count()) > 0 && (await locator.isVisible().catch(() => false))) {
@@ -142,7 +142,7 @@ async function firstVisible(page, selectors) {
   return null;
 }
 
-async function countByCandidates(page, selectors) {
+export async function countByCandidates(page, selectors) {
   let best = { selector: null, count: 0 };
   for (const selector of selectors) {
     const count = await page.locator(selector).count();
@@ -151,7 +151,7 @@ async function countByCandidates(page, selectors) {
   return best;
 }
 
-async function latestText(page, selectors) {
+export async function latestText(page, selectors) {
   for (const selector of selectors) {
     const locator = page.locator(selector);
     const count = await locator.count();
@@ -173,7 +173,7 @@ async function anyVisible(page, selectors) {
   return false;
 }
 
-async function sendViaUi(page, prompt) {
+export async function sendViaUi(page, prompt) {
   const composer = await firstVisible(page, COMPOSER_SELECTORS);
   if (!composer) throw new Error("Could not find a visible ChatGPT composer. UI selectors may have changed.");
 
@@ -185,7 +185,7 @@ async function sendViaUi(page, prompt) {
   return { composerSelector: composer.selector, sendSelector: send?.selector ?? "<Enter>" };
 }
 
-async function waitForAssistant(page, beforeCount, timeoutMs, beforeText = "") {
+export async function waitForAssistant(page, beforeCount, timeoutMs, beforeText = "") {
   const startedAt = Date.now();
   let lastText = "";
   let stableSince = 0;
