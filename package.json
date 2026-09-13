@@ -53,7 +53,8 @@
     "p1:expiry": "node ./scripts/p1/expiry-probe.mjs --json",
     "p1:ambiguous": "node ./scripts/p1/ambiguous-write-probe.mjs --json",
     "p2:live": "node ./scripts/p2/live-driver-probe.mjs --json",
-    "p3:runtime": "node ./scripts/p3/runtime-check.mjs"
+    "p3:runtime": "node ./scripts/p3/runtime-check.mjs",
+    "p4:ask": "node ./scripts/p4/ask-probe.mjs --json"
   },
   "publishConfig": {
     "access": "public"

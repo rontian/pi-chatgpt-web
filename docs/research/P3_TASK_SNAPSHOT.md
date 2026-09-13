@@ -1,6 +1,6 @@
 # P3 Task Snapshot
 
-Evidence date: 2026-09-12  
+Evidence date: 2026-09-12
 HEAD at evidence collection: after `a4ddae3`
 
 ## Implementation

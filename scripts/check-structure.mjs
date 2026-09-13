@@ -9,6 +9,9 @@ const required = [
   "src/runtime/chatgpt-runtime.ts",
   "scripts/p3/conversation-runtime.mjs",
   "scripts/p3/runtime-check.mjs",
+  "scripts/p4/command-handler.mjs",
+  "scripts/p4/ask-services.mjs",
+  "scripts/p4/ask-probe.mjs",
   "src/transport/transport.ts",
   "src/transport/browser-owned.ts",
   "src/browser/runtime.ts",
@@ -37,6 +40,7 @@ const required = [
   "docs/research/P1_WEB_FEASIBILITY_REPORT.md",
   "docs/research/P2_TASK_SNAPSHOT.md",
   "docs/research/P3_TASK_SNAPSHOT.md",
+  "docs/research/P4_TASK_SNAPSHOT.md",
   "docs/ARCHITECTURE.md",
   "docs/FEATURES.md",
   "docs/DEVELOPMENT_PLAN.md",
@@ -64,7 +68,7 @@ if (pkg.peerDependencies?.["@earendil-works/pi-coding-agent"] !== "*") {
 if (pkg.dependencies?.["playwright-core"] !== "1.63.0") {
   throw new Error("P1 browser dependency must stay pinned to playwright-core 1.63.0");
 }
-for (const script of ["validate", "pack:check", "p1:turn", "p1:turn:continue", "p1:turn:five", "p1:tab", "p1:expiry", "p1:ambiguous", "p2:live", "p3:runtime"]) {
+for (const script of ["validate", "pack:check", "p1:turn", "p1:turn:continue", "p1:turn:five", "p1:tab", "p1:expiry", "p1:ambiguous", "p2:live", "p3:runtime", "p4:ask"]) {
   if (!pkg.scripts?.[script]) throw new Error(`missing ${script} script`);
 }
 if (pkg.publishConfig?.access !== "public") throw new Error("public publishConfig expected");

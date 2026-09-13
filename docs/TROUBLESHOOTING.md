@@ -29,7 +29,7 @@ Inspect:
 /chatgpt capabilities
 ```
 
-If the isolated profile is not authenticated, prompt/ask fail closed rather than return fake ChatGPT output.
+If the isolated profile is not authenticated, prompt/ask fail closed rather than return fake ChatGPT output. Command-path proof is `npm run p4:ask`; Pi TUI `/chatgpt ask` is a separate validation.
 
 ## Prompt disappeared after reload
 

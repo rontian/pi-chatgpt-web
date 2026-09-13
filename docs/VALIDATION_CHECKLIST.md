@@ -12,6 +12,7 @@ This checklist is intentionally deferred until the repository is pulled to the u
 - [ ] `/chatgpt status`
 - [ ] `/chatgpt doctor`
 - [ ] `/chatgpt config models`
+- [x] `npm run p4:ask` (command-path ask, not Pi TUI)
 
 ## B. Browser authentication
 

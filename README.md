@@ -102,6 +102,8 @@ npm run p1:tab
 npm run p1:expiry
 npm run p1:ambiguous
 npm run p2:live
+npm run p3:runtime
+npm run p4:ask
 ```
 
 Authentication is confirmed from sanitized positive evidence from `/api/auth/session`, the logged-in ChatGPT UI, or both. Probe output reports only `authenticated`, `authSource`, endpoint status, and other non-secret diagnostics; it never prints raw session payloads, cookies, access tokens, email addresses, or account identifiers.

@@ -4,11 +4,11 @@ import { ChatGPTCommandServices } from "./services.js";
 import { PromptController } from "./prompt-controller.js";
 import { loadConfig, saveConfig } from "../config/loader.js";
 import { listModelKeys, resolveAssistantModel } from "../assistant/model-catalog.js";
+import { handleOperationalCommand } from "../../scripts/p4/command-handler.mjs";
 
 const HELP = `pi-chatgpt-web\n\nCommands:\n  /chatgpt help\n  /chatgpt status\n  /chatgpt login\n  /chatgpt login confirm\n  /chatgpt logout\n  /chatgpt doctor\n  /chatgpt capabilities\n  /chatgpt ask <request>\n  /chatgpt prompt <request>\n  /chatgpt prompt show|edit|send|retry|inspect\n  /chatgpt config\n  /chatgpt config assistant-model <provider/model|auto>\n  /chatgpt config assistant <on|off>\n  /chatgpt config models`;
 
-export function registerChatGPTCommand(pi: ExtensionAPI) {
-  const services = new ChatGPTCommandServices();
+export function registerChatGPTCommand(pi: ExtensionAPI, services = new ChatGPTCommandServices()) {
   const prompts = new PromptController(pi, services);
 
   pi.registerCommand("chatgpt", {
@@ -18,43 +18,31 @@ export function registerChatGPTCommand(pi: ExtensionAPI) {
       try {
         if (command.kind === "help") return ctx.ui.notify(HELP, "info");
 
-        if (command.kind === "status") {
-          const { config, health } = await services.status();
-          const resolved = config.assistant.enabled ? resolveAssistantModel(ctx.modelRegistry, config.assistant.model) : null;
-          return ctx.ui.notify([
-            "pi-chatgpt-web status",
-            `transport: ${health.ok ? "ready" : "not ready"}`,
-            `detail: ${health.detail ?? "-"}`,
-            `helper: ${config.assistant.enabled ? resolved?.key ?? `${config.assistant.model} (unresolved)` : "disabled"}`,
-          ].join("\n"), health.ok ? "info" : "warning");
+        if (command.kind === "status" || command.kind === "login" || command.kind === "logout" || command.kind === "doctor" || command.kind === "ask") {
+          const config = command.kind === "status" ? (await loadConfig()) : null;
+          const resolved = config?.assistant.enabled ? resolveAssistantModel(ctx.modelRegistry, config.assistant.model) : null;
+          const operational = {
+            login: () => services.login(),
+            confirmLogin: () => services.confirmLogin(),
+            logout: () => services.logout(),
+            ask: (text: string) => services.ask(text),
+            doctor: async () => {
+              const result = await services.doctor();
+              return { ...result, capabilities: services.runtime.capabilities.snapshot() };
+            },
+            async statusSummary() {
+              const { health } = await services.status();
+              return {
+                health,
+                helper: config?.assistant.enabled ? resolved?.key ?? `${config.assistant.model} (unresolved)` : "disabled",
+              };
+            },
+          };
+          return handleOperationalCommand(command, operational, (message, level) => ctx.ui.notify(message, level));
         }
 
         if (command.kind === "capabilities") {
           return ctx.ui.notify(JSON.stringify(services.runtime.capabilities.snapshot(), null, 2), "info");
-        }
-
-        if (command.kind === "login") {
-          const result = command.action === "confirm" ? await services.confirmLogin() : await services.login();
-          return ctx.ui.notify(result.detail, result.ok ? "info" : "warning");
-        }
-
-        if (command.kind === "logout") {
-          const result = await services.logout();
-          return ctx.ui.notify(result.detail, result.ok ? "info" : "warning");
-        }
-
-        if (command.kind === "doctor") {
-          const result = await services.doctor();
-          return ctx.ui.notify(JSON.stringify({ ...result, capabilities: services.runtime.capabilities.snapshot() }, null, 2), result.ok ? "info" : "warning");
-        }
-
-        if (command.kind === "ask") {
-          if (!command.text) return ctx.ui.notify("Usage: /chatgpt ask <request>", "warning");
-          const result = await services.ask(command.text);
-          if (result.status !== "completed" || !result.text) {
-            return ctx.ui.notify(`ChatGPT ask did not complete: ${result.status}${result.text ? `\n${result.text}` : ""}`, "warning");
-          }
-          return ctx.ui.notify(result.text, "info");
         }
 
         if (command.kind === "prompt") {
